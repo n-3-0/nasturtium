@@ -1,0 +1,154 @@
+// The Manifold handles IO across states and subscriptions, and has an abstraction system so different UI libraries can
+// use the same library (e.g. React, Vue, and plain DOM JS)
+
+import { Agent, makeInertAgent } from "./agent";
+import { implementation as basicImplementation } from "./implementations/basic";
+import { PriorityLane, hasNext, queueNext, runNext } from "./queue";
+
+// While Cleanup/Refresher are identical signatures, they are semantically different, so I define both.
+export type Cleanup = () => void;
+export type Refresher = () => void;
+export type Reaction<T = any> = (value: T, stateId: number) => void;
+
+// TODO: Should we use an update queue? Looks like the fiber queue does already?
+// Only rerender components when all state updates are finished. This is important for instances where a component
+// modifies multiple pieces of state, it would be ideal to only call for an update once all those changes have occurred.
+// This is one thing that would set this apart from a few other state libraries, both in terms of performance of change
+// and performance of reaction. The main thing to look into is whether or not iterating through reactions every time is
+// more computationally expensive than cycling through an update queue in a way that'll affect app performance long-term
+// const queue: any[] = [];
+
+const reactions = new Map<number, Set<Reaction>>();
+let priorities = new WeakMap<any, PriorityLane>();
+
+export function addReaction(id: number, reaction: Reaction, priority = PriorityLane.NORMAL) {
+    const set = (reactions.get(id) || new Set()).add(reaction);
+    reactions.set(id, set);
+    priorities.set(reaction, priority);
+
+    return () => {
+        set.delete(reaction);
+    };
+}
+
+export function clear(id: number) {
+    reactions.delete(id);
+}
+
+export function trigger(id: number, value?: any) {
+    if(_triggerCapture) {
+        _triggerCapture[id] = value;
+        return;
+    }
+
+    return propagate(id, value);
+}
+
+export function propagate(id: number, value?: any) {
+    reactions.get(id)?.forEach(trigger => {
+        queueNext(id, value, trigger, priorities.get(trigger) || PriorityLane.NORMAL);
+    });
+
+    if(!iterating) {
+        iterating = true;
+        processReactions();
+    }
+}
+
+let iterating = false;
+function processReactions() {
+    while(hasNext()) {
+        runNext();
+    }
+
+    iterating = false;
+}
+
+// TODO: Is there a way to do this in order? Does that matter?
+let _triggerCapture: Record<number, any> | null = null;
+type CommitBatch = () => void;
+
+export function beginBatch(): CommitBatch {
+    _triggerCapture = {};
+
+    return () => {
+        Object.entries(_triggerCapture!).forEach(([ id, value ]) => propagate(id as any, value));
+        _triggerCapture = null;
+    };
+}
+
+export function rejectBatch() {
+    _triggerCapture = null;
+}
+
+export interface SubscriptionRequest {
+    id: number;
+    context?: any;
+    override: Agent | null;
+}
+
+export type StateBridge<T = any> = {
+    cleanup(): void;
+    resolveTarget(context?: any): T;
+    updateTarget(target: T): void;
+    getSubscriptions(target: T): Map<number, Cleanup>;
+    shouldRegisterReaction(target: T): boolean;
+    getRefresher(target: T, subscriptions: Map<number, Cleanup>): Refresher | null;
+
+} | {
+    handleSubscription(req: SubscriptionRequest): void;
+    cleanup(): void;
+};
+
+let bridge: StateBridge<any> = basicImplementation;
+
+export function setBridge(implementation: StateBridge) {
+    bridge = implementation;
+}
+
+export function cleanup() {
+    bridge.cleanup();
+    reactions.clear();
+    priorities = new WeakMap();
+}
+
+// Make it work like a stack, now neat!
+let _agentOverride: Agent | null = null;
+export function useAgent(newTarget = makeInertAgent()) {
+    const oldTarget = _agentOverride;
+    _agentOverride = newTarget;
+    _agentOverride.before();
+
+    return () => {
+        _agentOverride!.after();
+        _agentOverride = oldTarget;
+    };
+}
+
+export function resolveAgent() {
+    return _agentOverride;
+}
+
+// context is used for the DOM implementation
+export function handleSubscription(id: number, context?: any) {
+    if('handleSubscription' in bridge) { // Type guard
+        return bridge.handleSubscription({ id, context, override: _agentOverride });
+    }
+
+    const target = _agentOverride || bridge.resolveTarget(context);
+    if(!target) return;
+
+    const subscriptions = bridge.getSubscriptions(target);
+    const refresher = bridge.getRefresher(target, subscriptions);
+
+    if(refresher) {
+        // Register the reaction / cleanup with the Manifold so state changes refresh the component by calling the
+        // updater we defined in useReducer above
+        // console.log(`Subscribing ${target.type.name} to ${id}`);
+        subscriptions.set(id, addReaction(id, refresher));
+    }
+
+    // Set the current target AFTER initializing all the logic. This ensures every reactive target has only one
+    // reducer/effect combo for React, even though it could react to any number of state instances
+    bridge.updateTarget(target);
+}

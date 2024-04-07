@@ -1,0 +1,43 @@
+[page="/home"] {
+    width: 100vw;
+    height: 100vh;
+    overflow-y: hidden;
+
+    .page-body,
+    .page-content {
+        flex: 1 1 100%;
+        overflow: hidden;
+    }
+
+    .page-content {
+        overflow-y: scroll;
+    }
+
+    #test-table {
+        .table-head,
+        .table-body,
+        .table-row {
+            display: grid;
+            grid-template-columns: subgrid;
+            grid-column: span var(--card-table-column-count);
+
+            margin: 0;
+            padding: 0;
+        }
+
+        .table-body {
+            row-gap: var(--card-table-gap);
+        }
+
+        .drag-handle {
+            display: flex;
+            align-items: center;
+            cursor: grab;
+
+            img {
+                opacity: .5;
+                pointer-events: none;
+            }
+        }
+    }
+}

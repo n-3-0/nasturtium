@@ -1,0 +1,20 @@
+$dot-size: 2rem;
+
+.backdrop {
+    background-color: #fff;
+    background-image: radial-gradient(#ccc 1px, transparent 0);
+    background-repeat: repeat;
+    background-size: $dot-size $dot-size;
+
+    position: relative;
+    overflow: hidden;
+
+    // This enables GPU acceleration, which makes the background offset snappier
+    transform: translate3d(0, 0, 0);
+
+    > .inner {
+        position: absolute;
+        // This enables GPU acceleration, which makes the top/left offset snappier
+        transform: translate3d(0, 0, 0);
+    }
+}

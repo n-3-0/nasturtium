@@ -1,0 +1,15 @@
+@use "./reset.scss" as *;
+
+html, body, #root {
+    width: 100vw;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    overscroll-behavior: none;
+    touch-action: none;
+}
+
+#root {
+    display: flex;
+    flex-direction: column;
+}

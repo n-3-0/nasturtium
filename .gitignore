@@ -1,0 +1,12 @@
+# Development
+node_modules
+build
+.vscode/settings.json
+
+# Testing
+coverage
+
+# Mac
+.DS_Store
+
+/nasturtium*.tar.gz

@@ -1,0 +1,17 @@
+.sidebar {
+    width: 20rem;
+    background: #777;
+    height: 100vh;
+    // left: -100%;
+    position: relative;
+    flex: 0 0 auto;
+
+    a {
+        color: #fff;
+    }
+
+    .is-match {
+        pointer-events: none;
+        color: #aaa;
+    }
+}

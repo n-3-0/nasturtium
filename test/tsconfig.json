@@ -1,0 +1,12 @@
+{
+    "extends": "../tsconfig.json",
+    "include": [ "../src", "./**/*.test.ts" ],
+    "compilerOptions": {
+        "noUnusedLocals": false,
+        "noUnusedParameters": false,
+        "paths": {
+            "nasturtium": ["../src"],
+            "nasturtium/*": ["../src/*"]
+        }
+    }
+}

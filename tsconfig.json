@@ -1,0 +1,34 @@
+{
+    "compilerOptions": {
+        "target": "ES2022",
+        "lib": [ "ES2022", "DOM", "DOM.Iterable" ],
+        "module": "ES2022",
+        /* Bundler mode */
+        "moduleResolution": "node",
+        "resolveJsonModule": true,
+        "isolatedModules": true,
+        // "noEmit": true,
+        "noImplicitAny": false,
+        "noEmitHelpers": true,
+        /* Linting */
+        "strict": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noFallthroughCasesInSwitch": false,
+        // Dependencies
+        "allowSyntheticDefaultImports": true,
+        "skipLibCheck": true,
+        "esModuleInterop": false,
+        "baseUrl": "./src",
+        "outDir": "./build"
+    },
+    "ts-node": {
+        "compilerOptions": {
+            "module": "CommonJS",
+            "noUnusedLocals": false,
+            "noUnusedParameters": false
+        }
+    },
+    "include": [ "src/**/*.ts", "src/**/*.d.ts" ],
+    "files": ["./src/index.ts"]
+}
