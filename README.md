@@ -1,18 +1,18 @@
 # Nasturtium
 
-This project aims to solve some specific gripes I have with application state. Specifically, how every project does it differently. There are now fifteen competing standards, but at least this one is mine and makes sense to me.
+[![npm version](https://badge.fury.io/js/nasturtium.svg)](https://badge.fury.io/js/nasturtium)
 
-Everyone says their library is unopinionated, optimized, battle-tested, etc. I make no such promises. It seems fast, and it's built the way I like it. If you happen to like it too, then use it in your projects and tell me about it, so I can better enable you to use it. If there's a bug, then report it, and I'll see if I can fix it for you.
+🚧 **Note that all this documentation is still under construction** 🚧
 
-Nasturtium emphasizes minimal boilerplate. In an ideal world, application state reactivity should feel intuitive and unintrusive, and require the least amount of code to enable as possible. In order to use nasturtium, you simply import an "implementation" once per project at the top of the main file depending on your project, and it will handle the rest. It provides a common API surface that works across different stacks, with four implemented currently, with more in progress:
+Nasturtium is a love/hate letter to my career, where every project went down the rabbit hole on state management, and always ended up rewriting/refactoring it every couple years. I wanted to build a state library that could handle all the common use cases with the least amount of boilerplate, and make it such that you could use the same basic building blocks to implement anything else you'd need. As a result, this project is opinionated, but flexible enough to where it should serve your needs all the same.
+
+In an ideal world, application reactivity should feel intuitive and unintrusive, and require the least amount of code to stitch together as possible. In order to use nasturtium, you simply import an ["implementation"](#supported-runtimes) for your tech stack once per project, and it will handle the rest. It provides a common API surface that works across different stacks, with four implemented currently, with more in progress:
  - Node.js
  - React
- - Preact
+ - Preact (WIP)
  - Plain DOM
 
 This allows you to learn it once, and use it in any project going forward.
-
-🚧 **Note that all this documentation is still under construction** 🚧
 
 ## Table of Contents
 
@@ -22,7 +22,7 @@ This allows you to learn it once, and use it in any project going forward.
   - [Supported Runtimes](#supported-runtimes)
     - [Node.js](#nodejs)
     - [React](#react)
-    - [Preact](#preact)
+    - [Preact (WIP)](#preact-wip)
     - [Plain DOM](#plain-dom)
       - [DOMv2 (Recommended)](#domv2-recommended)
       - [DOMv1 (Not Recommended)](#domv1-not-recommended)
@@ -115,7 +115,7 @@ To use this library in a React app, in your main file, you must import the React
 import "nasturtium/implementations/react";
 ```
 
-### Preact
+### Preact (WIP)
 
 _Note that this implementation is currently unfinished. I'm working on it._
 
