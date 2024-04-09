@@ -46,9 +46,7 @@ export function isDeferredMemoizer(obj: any): obj is DeferredMemoizer<any> {
     return typeof obj === "function" && obj.length === 2;
 }
 
-// TODO: Recalculate in parallel, not in sequence, with dependency changes
-// This would allow a chain of computed values to recalculate all "at the same time", leading to only one update for one dependency change
-export function createComputed<T = any>(memoizer: Computer<T>, eager = false, awaitPromise = true): ComputedState<T> {
+export function createComputed<T = any>(memoizer: Computer<T>, eager = false, awaitPromise = false): ComputedState<T> {
     const id = getNextId();
     let _value, first = true;
     let comparator = comparators.eqeqeq<T>;

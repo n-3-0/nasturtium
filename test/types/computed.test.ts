@@ -66,6 +66,21 @@ describe("ComputedState", () => {
             expect(mock).toHaveBeenCalledTimes(2);
             expect(mockObserve).toHaveBeenCalledTimes(1);
             expect(mockObserve.mock.lastCall[0]).toBe(14); // 7 * 2
+        });
+
+        it("computed", () => {
+            const mock = jest.fn().mockImplementation(value => value * 2);
+            const mockObserve = jest.fn();
+
+            const state = createComputed(() => 7);
+            const computed = state.makeComputed(mock);
+            computed.observe(mockObserve);
+
+            expect(mock).toHaveBeenCalledTimes(1);
+            expect(mockObserve).toHaveBeenCalledTimes(0);
+            expect(state.value).toBe(7);
+            expect(computed.value).toBe(14);
+            expect(mock.mock.results[0]).toEqual({ type: "return", value: 14 }); // 7 * 2
         })
     })
 
@@ -74,18 +89,19 @@ describe("ComputedState", () => {
             const computed = createComputed(async() => {
                 await wait(200);
                 return "Hello world!";
-            });
+            }, false, true);
 
             computed.observe(value => {
                 expect(value).toBe("Hello world!");
                 done();
             });
         });
+
         it("handles chain reactions", (done) => {
             const computed = createComputed(async() => {
                 await wait(200);
                 return "Hello world!";
-            });
+            }, false, true);
 
             computed.observe(value => {
                 expect(value).toBe("Hello world!");

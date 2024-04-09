@@ -86,6 +86,7 @@ This allows you to learn it once, and use it in any project going forward.
     - [React - Deferred Component](#react---deferred-component)
     - [DOM - Breakpoint](#dom---breakpoint)
   - [Changelog](#changelog)
+      - [1.3.3](#133)
       - [1.3.2](#132)
 
 ## Setup
@@ -128,19 +129,20 @@ import "nasturtium/implementations/preact";
 
 ### Plain DOM
 
-There are two ways to use Nasturtium in a non-frameworked browser context, dubbed DOMv1 and DOMv2 (WIP). DOMv1 is not recommended for general use, as it overwrites several `HTMLElement` prototype methods:
+There are two ways to use Nasturtium in a non-frameworked browser context, dubbed DOMv1 and DOMv2. DOMv1 is not recommended for general use, as it overwrites several `HTMLElement` prototype methods:
 - `HTMLElement.prototype.appendChild()`
 - `HTMLElement.prototype.setAttribute()`
 
 #### DOMv2 (Recommended)
 
-DOMv2 is a cleaner implementation for non-framework browser applications, but is still in progress. The implementation itself is essentially utility functions and do not pollute the `HTMLElement` prototype.
+DOMv2 is a cleaner implementation for non-framework browser applications. The implementation itself is essentially utility functions and do not pollute the `HTMLElement` prototype.
 
 ```ts
 import {
     text,
     attr,
-    elem
+    elem,
+    wrap
 } from "nasturtium/implementations/domv2"
 ```
 
@@ -342,6 +344,9 @@ Not only are comptued values able to be lazy/eager evaluated, but they can also 
 
 #### Computeds and Promises
 
+**⚠️ Warning ⚠️**: Because of how Nasturtium works under the hood, promise and deferred computed states can introduce off-target subscriptions.
+I don't recommend using these, but they have been built out in case you really need it.
+
 A computed value can return a promise, which will only update dependents when the promise resolves.
 
 **Note**: Computed states make no attempt to handle errors.
@@ -360,7 +365,7 @@ const userRecord = userId.makeComputed(async(userId) => {
     } catch(ex) {
         return null;
     }
-});
+}, false, true); // Lazy evaluated, await promises
 
 // This component only re-renders when the promise resolves
 function UserIndicator() {
@@ -392,10 +397,13 @@ const userRecord = userId.makeComputed(async(userId) => {
     } catch(ex) {
         return null;
     }
-}, false, false); // lazy evaluate AND do not resolve promises
+}, false, false); // lazy evaluate AND do not resolve promises (default)
 ```
 
 #### Deferred Computed Values
+
+**⚠️ Warning ⚠️**: Because of how Nasturtium works under the hood, promise and deferred computed states can introduce off-target subscriptions.
+I don't recommend using these, but they have been built out in case you really need it.
 
 If you provide a second parameter to the memoizer, it will turn into a deferred computed value.
 
@@ -1145,7 +1153,7 @@ In the off chance you need to do something particularly magical, I've built out 
 
 The `makeAgent()` function requires a function as a parameter, which will be called whenever that agent needs to trigger updates. It will return a cleanup function that **must be called** when you are done with reactive code. Agents will override the default reactive behavior, and any state references that occur between `useAgent()` and `cleanup()` will be assigned to that agent.
 
-Eventually, the DOMv2 implementation will use Agents instead of prototype pollution. The Agent system will be expanded to include more contextual data, allowing all sorts of reactivity to be added.
+The DOMv2 implementation uses Agents instead of prototype pollution to enable reactivity. Over time the Agent system will be expanded to include more contextual data and lifecycle events, enabling all sorts of reactivity.
 
 ```ts
 import {
@@ -1468,6 +1476,15 @@ pageBreakpoint.observe(breakpoint => console.log(`Page breakpoint is ${breakpoin
 ```
 
 ## Changelog
+
+#### 1.3.3
+
+- Added Github stuff
+- Default computed values `awaitPromise` to `false`
+- Update documentation on promise/deferred computed state
+- Update computed tests
+- Made the Agent manifold code an actual stack with `push`/`splice`
+- Added some Agent tests
 
 #### 1.3.2
 

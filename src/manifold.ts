@@ -112,30 +112,28 @@ export function cleanup() {
     priorities = new WeakMap();
 }
 
-// Make it work like a stack, now neat!
-let _agentOverride: Agent | null = null;
-export function useAgent(newTarget = makeInertAgent()) {
-    const oldTarget = _agentOverride;
-    _agentOverride = newTarget;
-    _agentOverride.before();
+const agentStack: Agent[] = [];
+export function useAgent(agent = makeInertAgent()) {
+    agentStack.push(agent);
+    agent.before();
 
     return () => {
-        _agentOverride!.after();
-        _agentOverride = oldTarget;
+        agent.after();
+        agentStack.splice(agentStack.indexOf(agent), 1)
     };
 }
 
 export function resolveAgent() {
-    return _agentOverride;
+    return agentStack.at(-1) || null;
 }
 
 // context is used for the DOM implementation
 export function handleSubscription(id: number, context?: any) {
     if('handleSubscription' in bridge) { // Type guard
-        return bridge.handleSubscription({ id, context, override: _agentOverride });
+        return bridge.handleSubscription({ id, context, override: resolveAgent() });
     }
 
-    const target = _agentOverride || bridge.resolveTarget(context);
+    const target = resolveAgent() || bridge.resolveTarget(context);
     if(!target) return;
 
     const subscriptions = bridge.getSubscriptions(target);

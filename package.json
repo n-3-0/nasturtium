@@ -5,6 +5,12 @@
     "description": "A very spicy application state library",
     "author": "robertdeneo",
     "license": "MPL-2.0",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/n-3-0/nasturtium.git"
+    },
+    "keywords": ["state", "signal", "computed", "react"],
+    "homepage": "https://github.com/n-3-0/nasturtium",
     "scripts": {
         "clean": "node scripts/clean.mjs",
         "compile": "npm run compile:cjs && npm run compile:esm && npm run compile:types",
