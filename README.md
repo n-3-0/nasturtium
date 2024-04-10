@@ -85,11 +85,12 @@ This allows you to learn it once, and use it in any project going forward.
     - [React - `rctv`](#react---rctv)
     - [React - Deferred Component](#react---deferred-component)
     - [DOM - Breakpoint](#dom---breakpoint)
-  - [Changelog](#changelog)
-      - [1.3.3](#133)
-      - [1.3.2](#132)
 
 ## Setup
+
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
 
 Somewhere at the root of your app, import the implementation you intend to use. If you do not need a specific implementation, the default is the `basic`, which provides no application-specific reactivity outside the `.observe()` and other standard API features.
 
@@ -97,15 +98,27 @@ I publish CommonJS, ES Module, and TypeScript type files to separate folders, an
 
 ## Supported Runtimes
 
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
+
 In order to bring about a brighter future for application state, a wide range of acceptable build targets must be possible. Right now the library is built in TypeScript, and compiles to EcmaScript 2022 code. Eventually I might add an ES6 build target.
 
 ### Node.js
+
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
 
 _Note that this implementation does not support child processes or workers. I'm working on it, eventually._
 
 In order to use Nasturtium for Node.js projects, no special imports or setup should be necessary. You simply create your state as you would, and use the built-in utilities such as `.observe()`, `createComputed<T>()`, `reactive()` etc.
 
 ### React
+
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
 
 _Note that this implementation does not really support StrictMode or Suspense very well. I'm working on it._
 
@@ -128,6 +141,10 @@ import "nasturtium/implementations/preact";
 **NOTE**: Add this _after_ all your other imports. Preact works a little different than React, and to accomodate it easily it needs to be imported _last_, not _first_ like React.
 
 ### Plain DOM
+
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
 
 There are two ways to use Nasturtium in a non-frameworked browser context, dubbed DOMv1 and DOMv2. DOMv1 is not recommended for general use, as it overwrites several `HTMLElement` prototype methods:
 - `HTMLElement.prototype.appendChild()`
@@ -164,6 +181,10 @@ See [Using DOMv1](#using-domv1) for a guide on how it works.
 
 ## Types of State
 
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
+
 There are a handful of state types that are possible in Nasturtium, each one acting as a sort of mock for existing data types. There are also a few utility types implemented to make certain industry standards more straightforward.
 
 All of the following examples will be for React projects, but the same state types and utility functions will work. React is just the easiest way for me to show how it works, and why it's useful.
@@ -171,6 +192,10 @@ All of the following examples will be for React projects, but the same state typ
 In all of these examples, we cover just the high level of what each state type can do. There are built-in functions and utilities for each, so check the TS types in the package and source code for a more detailed overview. Eventually I'll document everything.
 
 ### Primitive
+
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
 
 A primitive is a boxed value of any kind, with a simple getter and setter. Getting the value is how you subscribe to changes, setting the value will propagate changes to reactive code.
 
@@ -224,6 +249,10 @@ function ControlledInput() {
 ```
 
 ### Computed
+
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
 
 Computed values are similar to primitives, but are composed via synchronous logic. They can utilize other pieces of state, and will recalculate its value (and update dependents) when any of its state dependencies change.
 
@@ -434,6 +463,10 @@ function UserIndicator() {
 
 ### Object
 
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
+
 Primitives and computed values get us pretty far along in terms of state capabilities, but sometimes you need a little more structure. Object state is essentially a proxy, allowing your code to react to specific parts of an object, or any part therein. It will not allow deep reactivity, and recursive state is untested, so try not to do anything too crazy.
 
 ```tsx
@@ -490,6 +523,10 @@ const authState = createObject({
 ```
 
 ### Array
+
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
 
 Arrays are incredibly common, and incredibly useful. Making an array stateful even moreso. The Array state type handles not only index-based reactivity:
 
@@ -574,6 +611,10 @@ For a full list of prototype methods that act as getters and setters, check out 
 
 ### Tuple
 
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
+
 An array state is only "observable" at the top level - any interaction done to an array will refresh subscribers that use _any aspect of the array state_. Tuples are a more fine-grain (and frankly, more useful) version of Array states.
 
 ```tsx
@@ -654,9 +695,17 @@ The `makeComputed()` method will allow you to create a computed value based on a
 
 ### Map
 
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
+
 This was more an afterthought than a recommended data type. Eventually I will add an equivalent `Set`.
 
 ### Box
+
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
 
 Sometimes, you need a really weird type of state, and due to how this library is written, an edge case pops up where you can't do exactly what you want. To cover this, I've added a Box state. It has simple getter/setter functions with no restrictions on the value type. The `get()` function is always inert with boxed values, to subscribe to changes you muse call `use()` instead.
 
@@ -677,6 +726,10 @@ boxed.setValue(someNewValue);
 ```
 
 ### Signal
+
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
 
 A signal is a basic trigger, but can be used for more. It creates a callable function that will update any dependents. By default it is a `Signal<void>`, and the signal takes no arguments, but you can optionally provide a value to pass along to dependents.
 
@@ -713,6 +766,10 @@ function Modal() {
 You can also check the last signaled value at any given point by accessing the `lastValue` property of the signal function.
 
 ### Semaphore
+
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
 
 Similar to a signal, but explicitly for asynchronous, repeated actions. You can return an initial value, and subsequent updates can be given a new value. Dependents can access to the current value.
 
@@ -779,6 +836,10 @@ source.close();
 
 ### Pipeline
 
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
+
 Similar to a Semaphore, but with multiple "event" types. Comparable to a Node.js `EventEmitter`. The key difference is that a semaphore bootstraps using a function, and in a pipeline the bootstrap process is optional. Events can be emitted via bootstrap _or_ a dedicated `.emit()` function on the state.
 
 ```tsx
@@ -819,6 +880,10 @@ const events = createPipeline((emit, context) => {
 
 ### Stator
 
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
+
 A Stator is a more complex variant of computed state. It returns a function that, for a given input, creates a reactive version of the output. It can be considered a reactive adapter to functional programming, in the sense that each input-output pair is independently reactive, and changes will only propagate if the output changes.
 
 ```tsx
@@ -846,6 +911,10 @@ function AdminRoute(props) {
 ```
 
 ### Timer
+
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
 
 Sometimes you just need a simple interval. Timers are a strongly-typed, reactive interval, so that you know exactly what you're looking at.
 
@@ -897,6 +966,10 @@ function Timer() {
 Documentation coming soon. See source for details.
 
 ## Utility Methods
+
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
 
 In order to make working with state easier, I've added a bunch of helpful functions. They help shore up shortcomings in the base state functions.
 
@@ -980,6 +1053,10 @@ setInterval(() => state.value++, 1000);
 
 ### Priority Management and Manipulation
 
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
+
 Nasturtium 1.2.x introduced the priority lane system to improve performance for computed state, and introduced a couple utilities to manage it.
 
 #### Using the Queue
@@ -1024,6 +1101,10 @@ entry.promise.then(({ id, value }) => {
 ```
 
 ### Other Utilities
+
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
 
 #### `isPromise()`
 
@@ -1117,6 +1198,10 @@ function AlwaysUpdate() {
 
 ### Comparators and Update Optimization
 
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
+
 For many types of state, there is an internal check if a new value is different than the current value, and only if they differ is when propagation will occur. By default this is with a simple strict equality check, `a === b`, but you can optimize your state by replacing its internal comparator.
 
 ```tsx
@@ -1134,6 +1219,10 @@ state.value = "3"; // This will not trigger an update because 3 == "3"
 ```
 
 ### CYOA (Create Your Own Agent)
+
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
 
 In the off chance you need to do something particularly magical, I've built out an Agent system. It allows you to create reactive constructs that do not fit the normal state types. The current use case for Agents is in the `reactive()` / `inert()` type functions - `reactive()` has an agent that re-runs the given function, and `inert()` has a dummy agent that ignores requests to re-run.
 
@@ -1217,17 +1306,29 @@ const agent = makeAgent(() => { ... }, {
 
 ### Build Your Own Implementation
 
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
+
 I've provided a lot of sane defaults, and a couple implementations that suited my needs. However, if you want to enable reactivity in your projects, you can build a `StateBridge` - an implementation. I don't feel like documenting it, so go look through the source code in the `implementations` folder to see how they are built.
 
 By default, `basic` is imported and used. You can override an implementation by calling `setBridge()` and passing in your custom implementation. This is why you have to import an implementation if you are using a non-Node.js environment, because the `basic` implementation covers enough of Nasturtium's internals to get reactivity working out of the box.
 
 ## Using DOMv2
 
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
+
 DOMv2 doesn't currently work like any other implementation, in that it has no built-in `StateBridge`. What this means in practice is that it is an _extension for_ Nasturtium, rather than an _implementation of_ Nasturtium internals. What this also means is that DOMv2 can be used alongside other implementations!
 
 Element reactivity is controlled via helper functions, which implement Agents to perform changes. Note that for all of these (except `attr()` under certain circumstances), it will coalesce the value to a string, due to limitations of the browser.
 
 ### `text()`
+
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
 
 One key way you'd want to add reactivity is in an element's text content. To do this, we can use the `text()` function, which creates a DOM `TextNode` with reactivity encapsulated within a function.
 
@@ -1248,6 +1349,10 @@ document.body.appendChild(button);
 
 ### `attr()`
 
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
+
 Another common pattern that could use reactivity is element attributes. To enable that, the `attr()` function was added. It is similar to `text()` under the hood, but more specific:
 
 ```ts
@@ -1266,6 +1371,10 @@ document.body.appendChild(button);
 ```
 
 ### `elem()`
+
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
 
 The final current feature of DOMv2 is creating broadly-reactive elements. It takes in a `modifier` function that will re-run for any dependency change. Depending on your preferred style, this may be a cleaner way to do reactivity. It is essentially a mashed-together version of `reactive()` and `document.createElement()`:
 
@@ -1286,6 +1395,10 @@ document.body.appendChild(button);
 
 ### `wrap()`
 
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
+
 Take an existing element, and reactively perform changes to it.
 
 ```ts
@@ -1303,6 +1416,10 @@ route.value = window.location.pathname;
 ```
 
 ## Using DOMv1
+
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
 
 While imperfect, this _can_ feel more like a native feature, so some developers may opt to use DOMv1 over v2. It essentially hijacks some prototype methods in `HTMLElement` to create a fake quasi-lifecycle for an element. It's extremely overengineered, but it's neat so I kept it.
 
@@ -1350,11 +1467,19 @@ document.body.appendChild(button);
 
 ## Built-In Extensions
 
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
+
 While building out this library, I spent a while thinking about various things I would use it for. If I thought it would be useful for other people, I added it to the `extensions` folder. A couple ended up in `implementations` as subfolders.
 
 The documentation for most of this is coming soon.
 
 ### React - Utility Hooks
+
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
 
 Some utility hooks have been created to make using Nasturtium in a React setting a little easier.
 
@@ -1448,21 +1573,41 @@ function Multiplier({ factor }) {
 
 ### React - DOMv2 Integration
 
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
+
 TBD (to be documented)
 
 ### React - Hook State Type
+
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
 
 TBD (to be documented), but tl;dr run hooks _outside_ a component lifecycle and turn it into computed state.
 
 ### React - `rctv`
 
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
+
 TBD (to be documented)
 
 ### React - Deferred Component
 
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
+
 TBD (to be documented)
 
 ### DOM - Breakpoint
+
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
 
 By specifying a Bootstrap-style dictionary of breakpoints and their page widths, you can react to changes, by using a window resize listener under the hood. Later it will be converted to use a generated CSS sheet with media queries and a listener.
 
@@ -1481,25 +1626,3 @@ const pageBreakpoint = createBreakpoints({
 // breakpoint value will be one of the keys (e.g. "md")
 pageBreakpoint.observe(breakpoint => console.log(`Page breakpoint is ${breakpoint}`));
 ```
-
-## Changelog
-
-#### 1.3.3
-
-- Added Github stuff
-- Default computed values `awaitPromise` to `false`
-- Update documentation on promise/deferred computed state
-- Update computed tests
-- Made the Agent manifold code an actual stack with `push`/`splice`
-- Added some Agent tests
-
-#### 1.3.2
-
-- Added [Computed Promises](#computeds-and-promises) and [Deferred Computed Values](#deferred-computed-values)
-- Fixed issue with queue calling handler funcs with wrapper instead of direct values
-- Updated type signature to `createComputed` to account for promises and deferred values
-- Added `awaitPromise` parameter to computed initializers to explicitly control promise resolution strategy
-- Added `wait()` utility for tests, but exported in main module for user convenience
-- Added `createLazy` extension for non-default-exported `React.lazy`
-- Added some more tests
-- Updated README with new functionality, and a changelog (which you're reading right now!)
