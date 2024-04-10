@@ -16,6 +16,10 @@
         "react"
     ],
     "homepage": "https://github.com/n-3-0/nasturtium",
+    "files": [
+        "./README.md",
+        "./package.json"
+    ],
     "scripts": {
         "clean": "node scripts/clean.mjs",
         "compile": "npm run compile:cjs && npm run compile:esm && npm run compile:types",
@@ -25,13 +29,6 @@
         "build": "npm run clean && npm run compile && npm run bundle",
         "bundle": "node scripts/prepublish.mjs",
         "test": "jest --coverage"
-    },
-    "exports": {
-        "types": "./types",
-        "default": "./cjs",
-        "import": "./esm",
-        "require": "./cjs",
-        "node": "./esm"
     },
     "devDependencies": {
         "@jest/types": "^29.6.3",
@@ -43,7 +40,7 @@
         "tar": "^6.2.0",
         "ts-jest": "^29.1.2",
         "ts-node": "^10.9.2",
-        "typescript": "^5.3.3"
+        "typescript": "^5.4.5"
     },
     "peerDependencies": {
         "preact": "^10.19.6",
