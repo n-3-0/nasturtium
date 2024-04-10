@@ -7,6 +7,7 @@ import { createBox } from "../../types/box";
 import { Signal } from "../../types/signal";
 import { Timer } from "../../types/timer";
 import { reactive } from "../../reactive";
+import { createToggle } from "../../extensions/toggle";
 
 /** @reactive */
 export function usePrimitive<T = any>(
@@ -30,18 +31,12 @@ export function useObject<T extends object = {}>(
     return useMemo(() => createObject(initialValue || {}) as any, []);
 }
 
-export type Toggle = PrimitiveState<boolean> & { toggle(): boolean };
-
 /**
  * Creates a simple stateful toggle
  * @reactive
  */
 export function useToggle(initialValue = false) {
-    return useMemo(() => {
-        const primitive = createPrimitive(initialValue) as Toggle;
-        primitive.toggle = () => primitive.set(value => !value);
-        return Object.freeze(primitive);
-    }, []);
+    return useMemo(() => createToggle(initialValue), []);
 }
 
 type Effect = () => (() => void) | void;
