@@ -15,9 +15,6 @@ export interface State {
     readonly [STATE];
     readonly [IDENT];
 
-    // TODO: Type this better
-    [COMPARATOR]: any;
-
     /**
      * NOTE: get() methods are non-reactive
      */

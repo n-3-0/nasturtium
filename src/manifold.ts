@@ -112,23 +112,23 @@ export function cleanup() {
     priorities = new WeakMap();
 }
 
-const agentStack: Agent[] = [];
+const activeAgentStack: Agent[] = [];
 export function useAgent(agent = makeInertAgent()) {
-    agentStack.push(agent);
+    activeAgentStack.push(agent);
     agent.before();
 
     return () => {
         agent.after();
-        agentStack.splice(agentStack.indexOf(agent), 1)
+        activeAgentStack.splice(activeAgentStack.indexOf(agent), 1)
     };
 }
 
 export function resolveAgent() {
-    return agentStack.at(-1) || null;
+    return activeAgentStack.at(-1) || null;
 }
 
 // context is used for the DOM implementation
-export function handleSubscription(id: number, context?: any) {
+export function processDependents(id: number, context?: any) {
     if('handleSubscription' in bridge) { // Type guard
         return bridge.handleSubscription({ id, context, override: resolveAgent() });
     }
