@@ -31,7 +31,7 @@ export function text(value: () => any) {
     return node;
 }
 
-const jsControlledAttributes = new Set(["checked", "type", "value", "textContent", "innerText"]);
+const jsControlledAttributes = new Set(["checked", "disabled", "type", "value", "textContent", "innerText"]);
 
 /**
  * Reactively sets an element's attribute
