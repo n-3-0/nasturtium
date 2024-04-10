@@ -1077,7 +1077,7 @@ When authoring your own state types, you should be calling `trigger()` to propag
 ```ts
 import {
     getNextId, // or "nasturtium/constants"
-    handleSubscription, // or "nasturtium/constants"
+    processDependents, // or "nasturtium/manifold"
     trigger, // or "nasturtium/manifold"
     propagate, // or "nasturtium/manifold"
     beginBatch // or "nasturtium/manifold"
@@ -1087,14 +1087,7 @@ import {
 function createBasicInterval() {
     const id = getNextId();
     let interval = setInterval(() => trigger(id));
-
-    const state = () => {
-        handleSubscription(id, {
-            stateContainer: state,
-            id,
-            get: () => {},
-        });
-    };
+    const state = () => processDependents(id);
 
     return state;
 }
@@ -1103,14 +1096,7 @@ function createBasicInterval() {
 function createForcedInterval() {
     const id = getNextId();
     let interval = setInterval(() => propagate(id));
-
-    const state = () => {
-        handleSubscription(id, {
-            stateContainer: state,
-            id,
-            get: () => {},
-        });
-    };
+    const state = () => processDependents(id);
 
     return state;
 }
@@ -1320,7 +1306,25 @@ route.value = window.location.pathname;
 
 While imperfect, this _can_ feel more like a native feature, so some developers may opt to use DOMv1 over v2. It essentially hijacks some prototype methods in `HTMLElement` to create a fake quasi-lifecycle for an element. It's extremely overengineered, but it's neat so I kept it.
 
-**NOTE**: DOMv1 currently only really works with primitive states. It is untested (and likely broken) for all other state types.
+In order to create reactive data, you can pass functions to several functions/properties that previously only accepted primitive values:
+
+- `document.createTextNode()`
+- `HTMLElement`
+    - `contentEditable`, `draggable`, `hidden`, `style`, `title`,
+- `HTMLButtonElement`
+    - `disabled`, `type`
+- `HTMLInputElement`
+    - `disabled`, `checked`, `type`, `value`, `step`, `required`, `readOnly`
+- `HTMLImageElement`
+    - `src`, `alt`, `width`, `height`
+- `HTMLTextAreaElement`
+    - `cols`, `disabled`, `readonly`, `required`, `value`
+- `HTMLSelectElement`
+    - `disabled`, `multiple`, `required`, `value`
+- HTMLMeterElement
+    - `min`, `max`, `low`, `high`, `optimum`, `value`
+- HTMLDialogElement
+    - `open`
 
 ```ts
 import "nasturtium/implementations/domv1";
@@ -1330,14 +1334,17 @@ import { createPrimitive } from "nasturtium";
 const clicks = createPrimitive(0);
 const button = document.createElement("button");
 button.type = "button";
-button.textContent = "Clicks: ";
 
-// setAttribute() will make that attribute reactive if it is given a state value
-button.setAttribute("data-clicks", clicks.value);
-// appendChild() will make the textContent reactive if it is given a state value
-button.appendChild(clicks.value);
+// setAttribute() will make that attribute reactive if it is given a function
+button.setAttribute("data-clicks", () => clicks.value);
 
-button.addEventListener("click", () => clicks.value++);
+// Reactive text nodes can be explicitly created
+const reactiveTextNode = document.createTextNode(() => `Clicks: ${clicks.value}`);
+
+// Several attribute properties for several element types are now reactive when given a function
+button.textContent = () => `Clicks: ${clicks.value}`;
+button.onclick = () => clicks.value++;
+
 document.body.appendChild(button);
 ```
 
