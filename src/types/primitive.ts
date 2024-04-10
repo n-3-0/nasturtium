@@ -1,10 +1,13 @@
-import { Reaction, addReaction, trigger, handleSubscription } from "../manifold";
+import { Reaction, addReaction, trigger, processDependents } from "../manifold";
 import { IDENT, STATE, INTERNALS, COMPARATOR, State, getNextId } from "../constants";
 import { Box, makeBox } from "../box";
 import * as comparators from "../comparator";
 import { createComputed, type ComputedState } from "./computed";
 
 export interface PrimitiveState<T = any> extends State {
+    readonly [STATE]: "primitive";
+    [COMPARATOR]: comparators.Comparator<T>;
+
     /** @reactive Getting the value will make it reactive */
     get value(): T;
     set value(value: T);
@@ -62,12 +65,7 @@ export function createPrimitive<T = any>(
         },
 
         get value() {
-            handleSubscription(id, {
-                stateContainer: primitive,
-                id,
-                get: () => box.value,
-            });
-
+            processDependents(id);
             return box.value;
         },
 
@@ -93,21 +91,12 @@ export function createPrimitive<T = any>(
         // TODO: Is this good enough?
         use(reaction?: Reaction<T>) {
             if(!reaction) {
-                handleSubscription(id, {
-                    stateContainer: primitive,
-                    id,
-                    get: () => box.value,
-                });
-
+                processDependents(id);
                 return box.value;
             }
 
             reaction(box.value, id);
-            handleSubscription(id, {
-                stateContainer: primitive,
-                id,
-                get: () => box.value
-            });
+            processDependents(id);
         },
 
         makeComputed: (func, eager, awaitPromise) => createComputed(() => func(primitive.value), eager, awaitPromise)

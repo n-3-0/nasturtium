@@ -1,4 +1,4 @@
-import { Reaction, addReaction, trigger, handleSubscription } from "../manifold";
+import { Reaction, addReaction, trigger, processDependents } from "../manifold";
 import { IDENT, STATE, COMPARATOR, State, getNextId } from "../constants";
 import * as comparators from "../comparator";
 import { createComputed, type ComputedState } from "./computed";
@@ -13,6 +13,9 @@ export type ObjectKeyMap<
   : never;
 
 export interface MapState<T extends object = {}> extends State {
+    readonly [STATE]: "map";
+    [COMPARATOR]: comparators.Comparator<T>;
+
     get<K extends keyof T>(key: K): T[K];
     get(key: string): any;
     get(): T;
@@ -102,11 +105,7 @@ export function createMap<T extends object = {}>(
 
         use(reaction, ...keys) {
             if(typeof reaction === "function") {
-                handleSubscription(id, {
-                    stateContainer: map,
-                    id,
-                    get: () => values,
-                });
+                processDependents(id);
                 return values;
             }
 
@@ -116,11 +115,7 @@ export function createMap<T extends object = {}>(
                 if(!ids.has(key)) return null;
 
                 const keyId = ids.get(key);
-                handleSubscription(keyId, {
-                    stateContainer: map,
-                    id: keyId,
-                    get: () => values[key],
-                });
+                processDependents(keyId);
 
                 return values[key];
             }) as any;

@@ -1,4 +1,4 @@
-import { Reaction, addReaction, trigger, handleSubscription } from "../manifold";
+import { Reaction, addReaction, trigger, processDependents } from "../manifold";
 import { IDENT, STATE, COMPARATOR, getNextId } from "../constants";
 import * as comparators from "../comparator";
 
@@ -8,6 +8,8 @@ import { createComputed, type ComputedState } from "./computed";
 
 type ObjectStateMethods<T extends object = {}> = {
     readonly [STATE]: "object";
+    [COMPARATOR]: comparators.Comparator<T>;
+
     /** This is just for type exposure, not actually provided */
     readonly _type: T;
 
@@ -149,11 +151,7 @@ export function createObject<T extends object = {}>(
 
         use: (reaction, ...keys) => {
             if(typeof reaction === "function" || arguments.length === 0) {
-                handleSubscription(id, {
-                    stateContainer: object,
-                    id,
-                    get: () => values,
-                });
+                processDependents(id);
                 return values;
             }
 
@@ -163,11 +161,7 @@ export function createObject<T extends object = {}>(
                 if(!ids.has(key)) return null;
 
                 const keyId = ids.get(key);
-                handleSubscription(keyId, {
-                    stateContainer: object,
-                    id: keyId,
-                    get: () => values[key],
-                })
+                processDependents(keyId);
                 return values[key];
             }) as any;
         },
@@ -184,12 +178,7 @@ export function createObject<T extends object = {}>(
             if(!ids.has(key)) ids.set(key, getNextId());
             const keyId = ids.get(key);
 
-            handleSubscription(keyId, {
-                stateContainer: object,
-                id: keyId,
-                key,
-                get: () => values[key]
-            });
+            processDependents(keyId);
 
             return values[key];
         },

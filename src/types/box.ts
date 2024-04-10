@@ -1,10 +1,13 @@
-import { Reaction, addReaction, trigger, handleSubscription } from "../manifold";
+import { Reaction, addReaction, trigger, processDependents } from "../manifold";
 import { COMPARATOR, IDENT, STATE, State, getNextId } from "../constants";
 import { PrimitiveState } from "./primitive";
 import * as comparators from "../comparator";
 import { createComputed, type ComputedState } from "./computed";
 
 export interface BoxState<T = any> extends State {
+    readonly [STATE]: "box";
+    [COMPARATOR]: comparators.Comparator<T>;
+
     get(): T;
     set(value: T);
     observe(reaction: Reaction<T>): () => void;
@@ -30,7 +33,7 @@ export function createBox<T = any>(initialValue?: T) {
     let comparator = comparators.eqeqeq<T>;
 
     const box: BoxState<T> = Object.freeze({
-        [STATE]: "box",
+        [STATE]: "box" as const,
         [IDENT]: id,
 
         get [COMPARATOR]() { return comparator },
@@ -52,12 +55,7 @@ export function createBox<T = any>(initialValue?: T) {
         },
 
         use() {
-            handleSubscription(id, {
-                stateContainer: box,
-                id,
-                get: () => value,
-            });
-
+            processDependents(id);
             return value;
         },
 
@@ -70,7 +68,7 @@ export function createBox<T = any>(initialValue?: T) {
 
 export function boxPrimitive<T = any>(state: PrimitiveState<T>) {
     const box: BoxState<T> = Object.freeze({
-        [STATE]: "box",
+        [STATE]: "box" as const,
         [IDENT]: state[IDENT],
 
         get [COMPARATOR]() {

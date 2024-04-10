@@ -1,4 +1,4 @@
-import { Reaction, trigger, handleSubscription } from "../manifold";
+import { Reaction, trigger, processDependents } from "../manifold";
 import { COMPARATOR, IDENT, STATE, State, getNextId } from "../constants";
 import * as comparators from "../comparator";
 import { createComputed, type ComputedState } from "./computed";
@@ -27,6 +27,7 @@ export const forbiddenProps = ["observe", STATE, IDENT, "use"];
 // TODO: Should the trigger(id, []) pass in a reference to the state in a read-only way?
 export type ArrayState<T = any> = State & T[] & {
     readonly [STATE]: "array";
+    [COMPARATOR]: comparators.Comparator<T>;
 
     /** Non-reactive equivalent of at(i) */
     get(i: number)
@@ -61,11 +62,7 @@ export function createArray<T = any>(initialValue?: T[]) {
     for(const prop of listenableProps) {
         if(fakePrototype[prop]) continue;
         fakePrototype[prop] = (...args) => {
-            handleSubscription(id, {
-                stateContainer: array,
-                id,
-                get: () => (state as any)[prop](...args)
-            });
+            processDependents(id);
             return (state as any)[prop](...args);
         };
     }
@@ -86,6 +83,7 @@ export function createArray<T = any>(initialValue?: T[]) {
         get(_, prop) {
             if(prop === STATE) return "array";
             if(prop === IDENT) return id;
+            // TODO: Implement swappable comparators
             if(prop === COMPARATOR) return comparators.eqeqeq;
 
             if(fakePrototype[prop]) {
@@ -97,22 +95,13 @@ export function createArray<T = any>(initialValue?: T[]) {
             }
 
             if(prop === "length") {
-                handleSubscription(id, {
-                    stateContainer: array,
-                    id,
-                    get: () => state.length,
-                });
+                processDependents(id);
                 return state.length;
             }
 
             // TODO: Make this secure against mutations
             if(prop === Symbol.iterator) {
-                handleSubscription(id, {
-                    stateContainer: array,
-                    id,
-                    get: () => state[Symbol.iterator],
-                });
-
+                processDependents(id);
                 return state[Symbol.iterator];
             }
 
@@ -123,11 +112,7 @@ export function createArray<T = any>(initialValue?: T[]) {
             }
 
             if(!isNaN(Number(prop))) {
-                handleSubscription(id, {
-                    stateContainer: array,
-                    id,
-                    get: () => state[prop],
-                });
+                processDependents(id);
                 return state[prop];
             }
         },

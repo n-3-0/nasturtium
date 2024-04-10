@@ -1,4 +1,4 @@
-import { handleSubscription, trigger } from "../manifold";
+import { processDependents, trigger } from "../manifold";
 import { STATE, COMPARATOR, getNextId, IDENT } from "../constants";
 import { createPrimitive } from "./primitive";
 import { createComputed, type ComputedState } from "./computed";
@@ -7,6 +7,8 @@ export type AwaitedResource<T> = { waiting: boolean, error: any, result: T };
 
 export type Resource<T> = {
     readonly [STATE]: "resource";
+    readonly [COMPARATOR]: null;
+
     /** @reactive */
     readonly waiting: boolean;
     /** @reactive */
@@ -90,15 +92,7 @@ export function createResource<T = any>(
         },
 
         use: () => {
-            handleSubscription(id, {
-                stateContainer: state,
-                id,
-                get: () => ({
-                    waiting: waiting.get(),
-                    error: error.get(),
-                    result: result.get()
-                })
-            });
+            processDependents(id);
 
             return {
                 waiting: waiting.get(),

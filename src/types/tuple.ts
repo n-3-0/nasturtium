@@ -1,13 +1,14 @@
 // Tuple is like an Array, but with individually-reactive elements
 
 import { STATE, getNextId, type State, IDENT, COMPARATOR, INTERNALS } from "../constants";
-import { handleSubscription, trigger, type Reaction, Cleanup, addReaction } from "../manifold";
+import { processDependents, trigger, type Reaction, Cleanup, addReaction } from "../manifold";
 import { forbiddenProps, listenableProps, mutativeProps } from "./array";
 import { createComputed, type ComputedState } from "./computed";
 import * as comparators from "../comparator";
 
 type TupleExtensions<T extends any[] = any[]> = {
     readonly [STATE]: "tuple";
+    [COMPARATOR]: comparators.Comparator<T>;
 
     /** @inert */
     concat<U extends any[]>(...others: U[]): [...T, ...U];
@@ -62,12 +63,7 @@ export function createTuple<T extends any[] = any[]>(initialValue: T = [] as any
             stateIds[i] = getNextId();
         }
 
-        handleSubscription(stateIds[i], {
-            stateContainer: tuple,
-            id: stateIds[i],
-            get: () => values[i]
-        });
-
+        processDependents(stateIds[i]);
         return values[i];
     }
 
@@ -82,12 +78,7 @@ export function createTuple<T extends any[] = any[]>(initialValue: T = [] as any
         at: reactiveGetter,
 
         join: (...others) => {
-            handleSubscription(topLevelId, {
-                stateContainer: tuple,
-                id: topLevelId,
-                get: () => values.concat(...others),
-            });
-
+            processDependents(topLevelId);
             return values.concat(...others);
         },
 
@@ -146,13 +137,8 @@ export function createTuple<T extends any[] = any[]>(initialValue: T = [] as any
         slice: (start, end) => {
             const idSlice = stateIds.slice(start, end);
 
-            idSlice.forEach((id, i) => {
-                handleSubscription(id, {
-                    stateContainer: tuple,
-                    id: id,
-                    get: () => values.slice(start, end)[i]
-                });
-            });
+            // TODO: Make this a little better
+            idSlice.forEach(id => processDependents(id));
 
             return values.slice(start, end);
         },
@@ -237,12 +223,7 @@ export function createTuple<T extends any[] = any[]>(initialValue: T = [] as any
         if(fakePrototype[prop]) continue;
 
         fakePrototype[prop] = (...args) => {
-            handleSubscription(topLevelId, {
-                stateContainer: values,
-                id: topLevelId,
-                get: () => (values as any)[prop](...args)
-            });
-
+            processDependents(topLevelId);
             return (values as any)[prop](...args);
         };
     }
@@ -277,23 +258,13 @@ export function createTuple<T extends any[] = any[]>(initialValue: T = [] as any
             };
 
             if(prop === "length") {
-                handleSubscription(lengthId, {
-                    stateContainer: tuple,
-                    id: lengthId,
-                    get: () => values.length,
-                });
-
+                processDependents(lengthId);
                 return values.length;
             }
 
             // TODO: Make this secure against mutations
             if(prop === Symbol.iterator) {
-                handleSubscription(topLevelId, {
-                    stateContainer: tuple,
-                    id: topLevelId,
-                    get: () => values[Symbol.iterator],
-                });
-
+                processDependents(topLevelId);
                 return values[Symbol.iterator];
             }
 

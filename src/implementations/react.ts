@@ -93,12 +93,13 @@ function handleClassComponent(id: number, fiber: any, agent?: Agent) {
 }
 
 function handleSubscription({
-    id, override // TODO: Context arg?
+    id, override
 }: SubscriptionRequest) {
     if(override) {
         if(_target === override) return null;
 
-        override.addCleanup(id, addReaction(id, override.refresh, override.priority));
+        const cleanup = addReaction(id, override.refresh, override.priority);
+        override.addCleanup(id, cleanup);
 
         _target = override;
         return;

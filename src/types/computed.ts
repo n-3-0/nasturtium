@@ -1,12 +1,13 @@
 import { makeAgent } from "../agent";
 import { IDENT, STATE, INTERNALS, COMPARATOR, State, getNextId } from "../constants";
-import { Reaction, addReaction, handleSubscription, useAgent, trigger } from "../manifold";
+import { Reaction, addReaction, processDependents, useAgent, trigger } from "../manifold";
 import * as comparators from "../comparator";
 import { PriorityLane } from "../queue";
 import { isPromise } from "../utilities";
 
 export interface ComputedState<T = any> extends State {
     readonly [STATE]: "computed";
+    [COMPARATOR]: comparators.Comparator<T>;
 
     /** @reactive */
     get value(): T;
@@ -129,11 +130,7 @@ export function createComputed<T = any>(memoizer: Computer<T>, eager = false, aw
                 first = false;
             }
 
-            handleSubscription(id, {
-                stateContainer: computed,
-                id,
-                get: () => _value
-            });
+            processDependents(id);
 
             return _value;
         },
@@ -155,21 +152,13 @@ export function createComputed<T = any>(memoizer: Computer<T>, eager = false, aw
             }
 
             if(!reaction) {
-                handleSubscription(id, {
-                    stateContainer: computed,
-                    id,
-                    get: () => _value,
-                });
+                processDependents(id);
 
                 return _value;
             }
 
             reaction(_value, id);
-            handleSubscription(id, {
-                stateContainer: computed,
-                id,
-                get: () => _value
-            });
+            processDependents(id);
         },
 
         makeComputed: (func, eager, awaitPromise) => createComputed(() => func(computed.value), eager, awaitPromise)
