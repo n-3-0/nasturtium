@@ -4,6 +4,8 @@ import { ComputedState, createComputed } from "./computed";
 
 export type Stator<T extends Record<any, any> = Record<any, any>> = State & {
     readonly [STATE]: "stator";
+    readonly [COMPARATOR]: null; // TODO: Allow modifying inner computed's comparator
+
     /** @reactive */
     <K extends keyof T>(input: K): T[K];
 

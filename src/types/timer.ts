@@ -1,8 +1,11 @@
-import { addReaction, handleSubscription, trigger } from "../manifold";
+import { addReaction, processDependents, trigger } from "../manifold";
 import { IDENT, STATE, COMPARATOR, State, getNextId } from "../constants";
 import { createComputed, type ComputedState } from "./computed";
 
 export interface Timer<T extends number> extends State {
+    readonly [STATE]: "timer";
+    readonly [COMPARATOR]: null;
+
     start(): void;
     stop(): void;
     toggle(): void;
@@ -52,7 +55,7 @@ export function createTimer<T extends number>(
     }
 
     const timer = Object.freeze({
-        [STATE]: "timer",
+        [STATE]: "timer" as const,
         [IDENT]: id,
         [COMPARATOR]: null,
 
@@ -61,12 +64,7 @@ export function createTimer<T extends number>(
         immediate,
 
         get running() {
-            handleSubscription(pauseStateId, {
-                stateContainer: timer,
-                id: pauseStateId,
-                get: () => !!_interval,
-            });
-
+            processDependents(pauseStateId);
             return !!_interval;
         },
 
@@ -93,14 +91,7 @@ export function createTimer<T extends number>(
             trigger(pauseStateId, false);
         },
 
-        use: () => {
-            handleSubscription(id, {
-                stateContainer: timer,
-                id,
-                get: () => {},
-            });
-        },
-
+        use: () => processDependents(id),
         makeComputed: (func, eager, awaitPromise) => createComputed(previous => (timer.use(), func(previous)), eager, awaitPromise),
         observe: reaction => addReaction(id, reaction)
     });

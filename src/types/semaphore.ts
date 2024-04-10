@@ -1,10 +1,12 @@
-import { addReaction, handleSubscription, trigger } from "../manifold";
+import { addReaction, processDependents, trigger } from "../manifold";
 import { COMPARATOR, IDENT, STATE, State, getNextId } from "../constants";
 import * as comparators from "../comparator";
 import { createComputed, type ComputedState } from "./computed";
 
 export interface Semaphore<T = void> extends State {
     readonly [STATE]: "semaphore";
+    [COMPARATOR]: comparators.Comparator<T>;
+
     get(): T;
     /** @reactive */
     use(): T;
@@ -46,16 +48,11 @@ export function createSemaphore<T = void>(caller: (signal: (value?: any) => void
     const semaphore: Semaphore<T> = {
         [STATE]: "semaphore",
         [IDENT]: id,
-        [COMPARATOR]: null,
+        [COMPARATOR]: null as any,
         get: () => currentValue,
         observe: reaction => addReaction(id, reaction),
         use: () => {
-            handleSubscription(id, {
-                stateContainer: semaphore,
-                id,
-                get: () => currentValue,
-            });
-
+            processDependents(id);
             return currentValue;
         },
         makeComputed: (func, eager, awaitPromise) => createComputed(() => func(semaphore.use()), eager, awaitPromise),

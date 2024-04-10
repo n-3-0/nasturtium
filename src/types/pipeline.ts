@@ -1,9 +1,10 @@
-import { addReaction, handleSubscription, trigger } from "../manifold";
+import { addReaction, processDependents, trigger } from "../manifold";
 import { COMPARATOR, IDENT, STATE, getNextId, type State } from "../constants";
 import { ComputedState, createComputed } from "./computed";
 
 export interface Pipeline<T extends Record<any, any> = Record<any, any>> extends State {
     readonly [STATE]: "pipeline";
+    readonly [COMPARATOR]: null;
 
     emit<K extends keyof T>(input: K, value: T[K]): void;
     /** @reactive */
@@ -49,8 +50,8 @@ export function createPipeline<T extends Record<any, any> = Record<any, any>>(
 
     const pipeline: Pipeline<T> = {
         [STATE]: "pipeline",
-        [IDENT]: -1,
         [COMPARATOR]: null,
+        [IDENT]: -1,
 
         emit,
         get: () => lastValues,
@@ -59,11 +60,7 @@ export function createPipeline<T extends Record<any, any> = Record<any, any>>(
                 eventIds[key] = getNextId();
             }
 
-            handleSubscription(eventIds[key], {
-                stateContainer: pipeline,
-                id: eventIds[key],
-                get: () => lastValues[key],
-            });
+            processDependents(eventIds[key]);
 
             return lastValues[key];
         },

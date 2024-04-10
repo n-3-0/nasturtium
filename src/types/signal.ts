@@ -1,8 +1,11 @@
-import { addReaction, handleSubscription, trigger } from "../manifold";
+import { addReaction, processDependents, trigger } from "../manifold";
 import { COMPARATOR, IDENT, STATE, State, getNextId } from "../constants";
 import { createComputed, type ComputedState } from "./computed";
 
-export interface Signal<T = void> extends State{
+export interface Signal<T = void> extends State {
+    readonly [STATE]: "signal";
+    readonly [COMPARATOR]: null;
+
     /** Activate the signal */
     (value: T): void;
     /** @reactive */
@@ -38,12 +41,7 @@ export function createSignal<T = void>(initialValue?: T): Signal<T> {
 
     signal.observe = reaction => addReaction(id, reaction);
     signal.use = () => {
-        handleSubscription(id, {
-            stateContainer: signal,
-            id,
-            get: () => lastValue,
-        });
-
+        processDependents(id);
         return lastValue;
     };
 
