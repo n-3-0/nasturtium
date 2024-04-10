@@ -14,6 +14,7 @@ export {
 // TODO: Expose more of Manifold for custom state types? Or will Agent be enough?
 export {
     type StateBridge,
+    type Cleanup,
     resolveAgent,
     useAgent,
     setBridge,
