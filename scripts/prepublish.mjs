@@ -7,7 +7,8 @@ const baseDir = path.resolve();
 const sourceDir = path.join(baseDir, "src");
 const buildDir = path.join(baseDir, "build");
 
-const esmDir = path.join(buildDir, "esm");
+const esmDir = buildDir;
+const cjsDir = path.join(buildDir, "cjs");
 const typesDir = path.join(buildDir, "types");
 
 const pkgJson = path.join(buildDir, "package.json");
@@ -15,7 +16,6 @@ const pkgJson = path.join(buildDir, "package.json");
 console.log("Adding additional files...");
 
 await fsp.copyFile(path.join(baseDir, "README.md"), path.join(buildDir, "README.md"));
-await fsp.writeFile(path.join(buildDir, "index.js"), `exports = module.exports = require("./cjs/index.js");\n`);
 
 const packageJson = JSON.parse(await fsp.readFile(path.join(baseDir, "package.json"), "utf8"));
 
@@ -35,50 +35,52 @@ async function readdir(root, all = []) {
     return all;
 }
 
-const allFiles = (await readdir(esmDir, [])).filter(x => x.endsWith(".js"));
+const allFiles = (await readdir(cjsDir, [])).filter(x => x.endsWith(".js"));
 
 packageJson.exports ??= {};
 packageJson.files ??= [];
 
 packageJson.exports["./package.json"] = "./package.json";
 for(const file of allFiles) {
+    const localPath = path.relative(cjsDir, file);
+    const esmPath = path.join(esmDir, localPath);
+    const { dir, name, base } = path.parse(localPath);
+
     // Step 1 - copy the source and clean imports for mjs
-    const source = await fsp.readFile(file, "utf-8");
-    const transpiled = source.replace(/(import .* from\s+['"])(.*)(?=['"])/g, '$1$2.js');
-    await fsp.writeFile(file, transpiled);
+    const source = await fsp.readFile(esmPath, "utf-8");
+    const transpiled = source.replace(/^((?:im|ex)port[^'";}]+}?\s*from\s*['"])(.*)(?=['"])/gm, '$1$2.js');
+    await fsp.writeFile(esmPath, transpiled);
 
     // Step 2 - write the exports and files definitions in the package.json
-    const localPath = path.relative(esmDir, file);
-    const { dir, name, base } = path.parse(localPath);
 
     if(name === "index") {
         if(!dir) {
             packageJson.files.push(
-                `./types/${name}.d.ts`,
+                `./${base}`,
+                `./${name}.d.ts`,
                 `./cjs/${base}`,
-                `./esm/${base}`,
             );
 
             packageJson.exports["."] = {
-                "types": `./types/${name}.d.ts`,
-                "default": `./cjs/${base}`,
-                "import": `./esm/${base}`,
+                "types": `./${name}.d.ts`,
+                "default": `./${base}`,
+                "import": `./${base}`,
                 "require": `./cjs/${base}`,
-                "node": `./esm/${base}`,
+                "node": `./${base}`,
             };
         } else {
             packageJson.files.push(
-                `./types/${dir}/${name}.d.ts`,
+                `./${dir}/${base}`,
+                `./${dir}/${name}.d.ts`,
                 `./cjs/${dir}/${base}`,
-                `./esm/${dir}/${base}`,
             );
 
             packageJson.exports[`./${dir}`] = {
-                "types": `./types/${dir}/${name}.d.ts`,
-                "default": `./cjs/${dir}/${base}`,
-                "import": `./esm/${dir}/${base}`,
+                "types": `./${dir}/${name}.d.ts`,
+                "default": `./${dir}/${base}`,
+                "import": `./${dir}/${base}`,
                 "require": `./cjs/${dir}/${base}`,
-                "node": `./esm/${dir}/${base}`,
+                "node": `./${dir}/${base}`,
             };
         }
     } else {
@@ -86,17 +88,17 @@ for(const file of allFiles) {
         const fullNameWithExt = path.join(dir, base);
 
         packageJson.files.push(
-            `./types/${fullName}.d.ts`,
+            `./${fullNameWithExt}`,
+            `./${fullName}.d.ts`,
             `./cjs/${fullNameWithExt}`,
-            `./esm/${fullNameWithExt}`,
         );
 
         packageJson.exports[`./${fullName}`] = {
-            "types": `./types/${fullName}.d.ts`,
-            "default": `./cjs/${fullNameWithExt}`,
-            "import": `./esm/${fullNameWithExt}`,
+            "types": `./${fullName}.d.ts`,
+            "default": `./${fullNameWithExt}`,
+            "import": `./${fullNameWithExt}`,
             "require": `./cjs/${fullNameWithExt}`,
-            "node": `./esm/${fullNameWithExt}`,
+            "node": `./${fullNameWithExt}`,
         };
     }
 }
@@ -115,7 +117,7 @@ for(const file of allDeclarations) {
 
     packageJson.files.push(`./${filename}`);
     packageJson.exports[`./${filename}`] = {
-        "types": `./types/${filename}`,
+        "types": `./${filename}`,
     };
 }
 
