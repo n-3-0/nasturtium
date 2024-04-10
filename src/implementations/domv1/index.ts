@@ -6,9 +6,6 @@ import "./globals.d.ts";
 import { Agent, makeAgent } from "../../agent";
 import { useAgent } from "../../manifold";
 
-import "./elements/select";
-import "./elements/textarea";
-
 const _setAttribute = Element.prototype.setAttribute;
 const _removeAttribute = Element.prototype.removeAttribute;
 const _createTextNode = document.createTextNode;

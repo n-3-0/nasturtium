@@ -48,7 +48,13 @@ for(const file of allFiles) {
 
     // Step 1 - copy the source and clean imports for mjs
     const source = await fsp.readFile(esmPath, "utf-8");
-    const transpiled = source.replace(/^((?:im|ex)port[^'";}]+}?\s*from\s*['"])(.*)(?=['"])/gm, '$1$2.js');
+    const transpiled = source.replace(/^((?:im|ex)port[^'";}]+}?\s*from\s*['"])(.*)(?=['"])/gm, (_, preamble, dep) => {
+        if(packageJson.dependencies?.[dep]) return `${preamble}${dep}`;
+        if(packageJson.optionalDependencies?.[dep]) return `${preamble}${dep}`;
+        if(packageJson.peerDependencies?.[dep]) return `${preamble}${dep}`;
+
+        return `${preamble}${dep}.js`;
+    });
     await fsp.writeFile(esmPath, transpiled);
 
     // Step 2 - write the exports and files definitions in the package.json
