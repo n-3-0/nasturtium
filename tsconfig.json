@@ -20,6 +20,7 @@
         "skipLibCheck": true,
         "esModuleInterop": false,
         "baseUrl": "./src",
+        "rootDir": "./src",
         "outDir": "./build"
     },
     "ts-node": {
@@ -29,6 +30,6 @@
             "noUnusedParameters": false
         }
     },
-    "include": [ "src/**/*.ts", "src/**/*.d.ts" ],
+    "include": [ "src/**/*.ts", "src/**/*.tsx", "src/**/*.d.ts" ],
     "files": ["./src/index.ts"]
 }
