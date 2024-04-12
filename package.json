@@ -26,8 +26,9 @@
         "compile:cjs": "tsc --project ./tsconfig.build.json",
         "compile:esm": "tsc --project ./tsconfig.buildnext.json",
         "compile:types": "tsc --project ./tsconfig.types.json",
-        "build": "npm run clean && npm run compile && npm run bundle",
+        "build": "npm run clean && npm run compile && npm run bundle && npm run bundle:postprocess",
         "bundle": "node scripts/prepublish.mjs",
+        "bundle:postprocess": "tsc-alias",
         "test": "jest --coverage"
     },
     "devDependencies": {
@@ -40,6 +41,7 @@
         "tar": "^6.2.0",
         "ts-jest": "^29.1.2",
         "ts-node": "^10.9.2",
+        "tsc-alias": "^1.8.8",
         "typescript": "^5.4.5"
     },
     "peerDependencies": {
