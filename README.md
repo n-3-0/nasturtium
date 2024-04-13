@@ -80,6 +80,11 @@ This allows you to learn it once, and use it in any project going forward.
       - [`useComputed()`](#usecomputed)
       - [`useToggle()`](#usetoggle)
       - [`useEffective()`](#useeffective)
+    - [React - Conditionals](#react---conditionals)
+      - [`If` Component](#if-component)
+      - [`Switch` Component](#switch-component)
+      - [`With` Component](#with-component)
+      - [`Each` Component](#each-component)
     - [React - DOMv2 Integration](#react---domv2-integration)
     - [React - Hook State Type](#react---hook-state-type)
     - [React - `rctv`](#react---rctv)
@@ -1568,6 +1573,158 @@ function Multiplier({ factor }) {
     }, [ factor ]);
 
     return `Result: ${cache}`;
+}
+```
+
+### React - Conditionals
+
+<a href="#nasturtium">
+    <sup>Return to Top</sup>
+</a>
+
+To avoid ternary hell in your JSX, I've built out some useful components
+
+#### `If` Component
+
+The `If` component allows you to render or omit its children based on a provided condition, which can be reactive.
+
+```tsx
+// or "nasturtium/types/primitive"
+import { createPrimitive } from "nasturtium";
+// or "nasturtium/extensions/react/conditionals/if"
+import { If } from "nasturtium/extensions/react/conditionals";
+
+type ViewMode = "normal" | "drag" | "reorder";
+const viewMode = createPrimitive<ViewMode>("normal");
+
+function Parent() {
+    return (
+        <div someJSX>
+            ...
+
+            <If q={() => viewMode.value === "drag"}>
+                {/* Anything in here will not render if q() is falsy */}
+            </If>
+        </div>
+    );
+}
+```
+
+Alternatively, you can provide a `then` prop to achieve the same result.
+
+```tsx
+<If q={() => something} then={
+    <Component />
+} />
+```
+
+If you need an `else` condition, unfortunately that's a reserved keyword. But I _did_ add an `otherwise` prop that acts as the else. This works regardless of whether you use `children` or `then`.
+
+```tsx
+function Something() {
+    return (
+        <If q={() => something} then={
+            <Component whenTrue />
+        } otherwise={
+            <Component whenFalse />
+        } />
+
+        <If q={() => something} otherwise={...}>
+            <Component whenTrue>
+        </If>
+    );
+}
+```
+
+#### `Switch` Component
+
+If you need `if..else if..else if..etc`, instead of having many `<If />` components or (god forbid) nested ternary, you can use a single `Switch`. It functions similarly to a standard `switch` statement, but JSX-ified. It even comes with an optional `default` property for fallthrough cases.
+
+```tsx
+// or "nasturtium/extensions/react/conditionals/switch"
+import { Switch } from "nasturtium/extensions/react/conditionals";
+
+function Something() {
+    return (
+        <Switch q={() => something} when={{
+            "condition1": (
+                <Component whenCondition1 />
+            ),
+
+            "condition2": (
+                <Component whenCondition2 />
+            ),
+
+            "condition3": (
+                <Component whenCondition3 />
+            ),
+
+            default: "Nothing else matched!"
+        }} />
+    );
+}
+```
+
+#### `With` Component
+
+Sometimes you need to pass in a stateful value to a child component, but you don't want to modify the child component to handle Nasturtium reactivity. The `With` component will inject a prop (default `"value"`) to all direct children with the result of a function.
+
+```tsx
+import { usePrimitive } from "nasturtium/implementations/react/hooks";
+// or "nasturtium/extensions/react/conditionals/with"
+import { With } from "nasturtium/extensions/react/conditionals";
+
+
+function Child({ value, onChange }) {
+    return (
+        <input type="text" value={value} onChange={onChange} />
+    );
+}
+
+function Parent() {
+    const input = usePrimitive("");
+
+    // `value` prop gets injected, and because it's a reactive state, will rerender on change automatically!
+    return (
+        <With q={() => input.value}>
+            <Child onChange={e => input.value = e.target.value} />
+        </With>
+    );
+}
+```
+
+#### `Each` Component
+
+Similar to the `With` component, but for array values. It will rerender children for each item in the resulting array, injecting `item`, `index` and `array` props.
+
+When given a tuple state, as demonstrated below, it will add some intermediary components to allow child elements to only re-render when the relevant data has changed. See the React demo page for `/each-tuple` for a more in-depth example.
+
+```tsx
+import { useArray } from "nasturtium/implementations/react/hooks";
+// or "nasturtium/extensions/react/conditionals/each"
+import { Each } from "nasturtium/extensions/react/conditionals";
+
+function ListItem({ item, index, array }) {
+    return (
+        <li>{item}</li>
+    );
+}
+
+function OrderedList() {
+    const notes = useArray<string[]>();
+
+    return (
+        <>
+            <button type="button" onClick={() => notes.push("New Item")}>
+                Add Item
+            </button>
+            <ol>
+                <Each q={() => notes}>
+                    <ListItem />
+                </Each>
+            </ol>
+        </>
+    )
 }
 ```
 
