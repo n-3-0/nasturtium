@@ -29,6 +29,7 @@ export * from "./types/box";
 export * from "./types/computed";
 export * from "./types/map";
 export * from "./types/object";
+export * from "./types/pipeline";
 export * from "./types/primitive";
 export * from "./types/resource";
 export * from "./types/semaphore";
