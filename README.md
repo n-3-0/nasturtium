@@ -1,6 +1,8 @@
 # Nasturtium
 
 [![npm version](https://badge.fury.io/js/nasturtium.svg)](https://badge.fury.io/js/nasturtium)
+![NPM Downloads](https://img.shields.io/npm/dm/nasturtium)
+![Last Commit](https://badgen.net/github/last-commit/n-3-0/nasturtium/master)
 
 🚧 **Note that all this documentation is still under construction** 🚧
 
@@ -125,6 +127,8 @@ In order to use Nasturtium for Node.js projects, no special imports or setup sho
     <sup>Return to Top</sup>
 </a>
 
+![React Version](https://img.shields.io/npm/dependency-version/nasturtium/peer/react)
+
 _Note that this implementation does not really support StrictMode or Suspense very well. I'm working on it._
 
 To use this library in a React app, in your main file, you must import the React implementation to add reactivity to your components. This import should be added before any import trees that utilize state:
@@ -134,6 +138,8 @@ import "nasturtium/implementations/react";
 ```
 
 ### Preact (WIP)
+
+![Preact Version](https://img.shields.io/npm/dependency-version/nasturtium/peer/preact)
 
 _Note that this implementation is currently unfinished. I'm working on it._
 
