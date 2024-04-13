@@ -1,7 +1,5 @@
-// TODO: Do we want to compute these?
-import { useComputed } from "implementations/react/hooks";
+// TODO: Do we want to compute/memoize these?
 import React, {
-    useMemo,
     type ReactNode,
     type ReactElement
 } from "react";
@@ -20,17 +18,12 @@ export type WithProps<T = any, P extends string = "value"> = { q: () => T; prop?
 export function With<T = any, P extends string = "value">({
     q, children, prop = "value" as P, run
 }: WithProps<T, P>) {
-    const value = useComputed(q).use();
+    const value = q();
 
-    return useMemo(() => {
-        if(run) {
-            return run(value);
-        }
+    if(run) {
+        return run(value);
+    }
 
-        return React.Children.map(children, child => {
-            if(!React.isValidElement(child)) return child;
-
-            return React.cloneElement(child, { [prop]: value });
-        });
-    }, [ value, prop ]);
+    const child = React.Children.only(children);
+    return React.cloneElement(child, { [prop]: value });
 }

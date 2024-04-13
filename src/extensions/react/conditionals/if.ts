@@ -1,5 +1,4 @@
-// TODO: Do we want to compute these?
-import { useComputed } from "implementations/react/hooks";
+// TODO: Do we want to compute/memoize these?
 import type { ReactNode } from "react";
 
 export type IfProps = {
@@ -21,7 +20,7 @@ export type IfProps = {
 export function If({
     q, children, then, otherwise
 }: IfProps) {
-    const value = useComputed(q).use();
+    const value = q();
 
     if(!value) {
         return otherwise;
