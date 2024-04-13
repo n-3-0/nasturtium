@@ -12,6 +12,7 @@ export interface ComputedState<T = any> extends State {
     /** @reactive */
     get value(): T;
 
+    /** @inert */
     get(): T;
 
     observe(reaction: Reaction<T>): () => void;
@@ -47,7 +48,11 @@ export function isDeferredMemoizer(obj: any): obj is DeferredMemoizer<any> {
     return typeof obj === "function" && obj.length === 2;
 }
 
-export function createComputed<T = any>(memoizer: Computer<T>, eager = false, awaitPromise = false): ComputedState<T> {
+export function createComputed<T = any>(
+    memoizer: Computer<T>,
+    eager = false,
+    awaitPromise = false
+): ComputedState<T> {
     const id = getNextId();
     let _value, first = true;
     let comparator = comparators.eqeqeq<T>;

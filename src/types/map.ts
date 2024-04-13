@@ -16,10 +16,12 @@ export interface MapState<T extends object = {}> extends State {
     readonly [STATE]: "map";
     [COMPARATOR]: comparators.Comparator<T>;
 
+    /** @inert */
     get<K extends keyof T>(key: K): T[K];
     get(key: string): any;
     get(): T;
 
+    /** @inert */
     getAll<K extends (keyof T)[]>(...keys: [...K]): ObjectKeyMap<K, T>;
     getAll(...keys: string[]): any[];
 

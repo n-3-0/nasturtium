@@ -21,7 +21,11 @@
         "esModuleInterop": false,
         "baseUrl": "./src",
         "rootDir": "./src",
-        "outDir": "./build"
+        "outDir": "./build",
+        "jsx": "react-jsx",
+        "paths": {
+            "nasturtium/*": ["./*"]
+        }
     },
     "ts-node": {
         "compilerOptions": {

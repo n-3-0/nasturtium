@@ -18,13 +18,19 @@ export type Resource<T> = {
 
     readonly signal: AbortSignal;
 
+    /** @inert */
     isWaiting(): boolean;
+    /** @inert */
     getError(): any;
+    /** @inert */
     getResult(): T;
 
     refresh(abort?: boolean): Promise<T>;
     abort(reason?: any): void;
 
+    /** @inert */
+    get(): T;
+    /** @reactive */
     use(): AwaitedResource<T>;
 
     makeComputed<U = any>(func: (value: AwaitedResource<T>) => U, eager?: boolean, awaitPromise?: boolean): ComputedState<U>;
@@ -90,6 +96,8 @@ export function createResource<T = any>(
                     ex
                 ));
         },
+
+        get: () => result.get(),
 
         use: () => {
             processDependents(id);

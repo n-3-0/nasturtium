@@ -14,11 +14,6 @@ export const COMPARATOR = Symbol("comparator");
 export interface State {
     readonly [STATE];
     readonly [IDENT];
-
-    /**
-     * NOTE: get() methods are non-reactive
-     */
-    get(): any;
 }
 
 export function isStateful(src: any): src is State {
