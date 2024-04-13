@@ -25,31 +25,34 @@ export function Each<T extends TupleState<any[]> | any[] = any[]>({
 }: EachProps<T>) {
     const value = q();
 
+    const child = React.Children.only(children ?? ("" as any));
+
+    if(isTupleState(value)) return (
+        <TupleEach tuple={value} child={child} run={run} />
+    );
+
     if(run) {
         return value?.map(run as any) as any[];
     }
-
-    const child = React.Children.only(children);
-    if(isTupleState(value)) return (
-        <TupleEach tuple={value} child={child} />
-    );
 
     return value?.map((item, index) => React.cloneElement(child, {
         item, index, array: value
     }));
 }
 
-function TupleEach({ tuple, child }: { tuple: TupleState, child: any }) {
+function TupleEach({ tuple, child, run }: { tuple: TupleState, child: any, run: any }) {
     const tupleId = getStateId(tuple);
 
     return Array.from({ length: tuple.length }).map((_, i) => (
-        <EachItem key={`each-${tupleId}-${i}`} tuple={tuple} index={i} child={child} />
+        <EachItem key={`each-${tupleId}-${i}`} tuple={tuple} index={i} child={child} run={run} />
     ));
 }
 
 // Used when it's a Tuple state
-function EachItem({ tuple, index, child }: { tuple: TupleState, index: number, child: any }) {
+function EachItem({ tuple, index, child, run }: { tuple: TupleState, index: number, child: any, run: any }) {
     const item = tuple[index];
+
+    if(run) return run(item, index, tuple);
 
     return React.cloneElement(child, {
         item, index, array: tuple

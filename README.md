@@ -1693,11 +1693,23 @@ function Parent() {
 }
 ```
 
+Alternatively, you can run a function provided by the `run` prop.
+
+```tsx
+function Provided() {
+    return (
+        <With q={() => something} run={value => (
+            <SomethingElse value={value}>
+        )} />
+    )
+}
+```
+
 #### `Each` Component
 
 Similar to the `With` component, but for array values. It will rerender children for each item in the resulting array, injecting `item`, `index` and `array` props.
 
-When given a tuple state, as demonstrated below, it will add some intermediary components to allow child elements to only re-render when the relevant data has changed. See the React demo page for `/each-tuple` for a more in-depth example.
+When given a [tuple](#tuple), as demonstrated below, it will add some intermediary components to allow child elements to only re-render when the relevant data has changed. See the React demo page for `/each-tuple` for a more in-depth example.
 
 ```tsx
 import { useArray } from "nasturtium/implementations/react/hooks";
@@ -1725,6 +1737,18 @@ function OrderedList() {
             </ol>
         </>
     )
+}
+```
+
+Just like with the `With` component, you can use a `run` prop instead of children. For [tuples](#tuple), it will be ran with the same optimizations as a child element, and be provided the same information.
+
+```tsx
+function Component() {
+    return (
+        <Each q={() => someTuple} run={(item, index, tuple) => (
+            <Child />
+        )} />
+    );
 }
 ```
 
