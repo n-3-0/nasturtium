@@ -10,14 +10,23 @@ type TupleExtensions<T extends any[] = any[]> = {
     readonly [STATE]: "tuple";
     [COMPARATOR]: comparators.Comparator<T>;
 
+    /** @reactive */
+    use(): T;
+
     /** @inert */
     concat<U extends any[]>(...others: U[]): [...T, ...U];
 
     /** @reactive equivalent to concat() */
     join<U extends any[]>(...others: U[]): [...T, ...U];
 
+    /** @inert equivalent to forEach() */
+    traverse(func: (item: T[number], index: number) => void): void;
+    /** @inert equivalent to map() */
+    transform<U = any>(func: (item: T[number], index: number) => U): U[];
+
     /** @inert */
     get<I extends number>(i: I): T[I];
+    get(): T;
 
     /** @inert */
     size(): number;
@@ -41,9 +50,9 @@ type TupleExtensions<T extends any[] = any[]> = {
     makeAllComputed<U = any>(func: (value: TupleState<T>) => U, eager?: boolean, awaitPromise?: boolean): ComputedState<U>;
 };
 
-export type TupleState<T extends any[] = any[]> = State & T & TupleExtensions<T>;
+export type TupleState<T extends any[] = any[]> = State & [...T] & TupleExtensions<T>;
 
-export function isTupleState(src: any): src is TupleState {
+export function isTupleState<T extends any[] = any[]>(src: any): src is TupleState<T> {
     return src?.[STATE] === "tuple";
 }
 
@@ -68,14 +77,23 @@ export function createTuple<T extends any[] = any[]>(initialValue: T = [] as any
     }
 
     const fakePrototype = {
-        // TODO: Should this be values.concat() for safety? What are the use cases for inert?
-        get inert() { return values },
+        // TODO: Should this be just values?
+        get inert() { return values.slice() },
 
         copyWithin: () => { throw new Error("copyWithin() not yet supported") },
         concat: (...others) => values.concat(...others),
-        get: i => !arguments.length ? values : inertGetter(i),
+        get: (i) => typeof i !== "number" ? values.slice() : inertGetter(i),
         size: () => values.length,
         at: reactiveGetter,
+
+        traverse: func => values.forEach(func),
+        transform: func => values.map(func),
+
+        use: () => {
+            processDependents(topLevelId);
+            // TODO: Should this be just values?
+            return values.slice(); // Return a copy to prevent mutation
+        },
 
         join: (...others) => {
             processDependents(topLevelId);
@@ -110,7 +128,7 @@ export function createTuple<T extends any[] = any[]>(initialValue: T = [] as any
                 return addReaction(stateIds[i], reaction);
             }
 
-            return addReaction(topLevelId, reaction);
+            return addReaction(topLevelId, i);
         },
 
         replace: newValues => {
@@ -162,9 +180,9 @@ export function createTuple<T extends any[] = any[]>(initialValue: T = [] as any
 
             return value;
         },
-        push: (...values) => {
-            const result = values.push(...values);
-            stateIds.push(...values.map(() => getNextId()));
+        push: (...additional) => {
+            const result = values.push(...additional);
+            stateIds.push(...additional.map(() => getNextId()));
 
             trigger(topLevelId, values);
             trigger(lengthId, values.length);
