@@ -29,7 +29,7 @@ export type ArrayState<T = any> = State & T[] & {
     readonly [STATE]: "array";
     [COMPARATOR]: comparators.Comparator<T>;
 
-    /** Non-reactive equivalent of at(i) */
+    /** @inert Non-reactive equivalent of at(i) */
     get(i: number)
     observe(reaction: Reaction<T>): () => void;
 

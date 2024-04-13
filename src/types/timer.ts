@@ -11,6 +11,9 @@ export interface Timer<T extends number> extends State {
     toggle(): void;
     /** @reactive */
     use(): void;
+    /** @inert */
+    get(): any;
+
     /**
      * Subscribe an explicit trigger with a cleanup handler
      * @returns Cleanup function to unsubscribe

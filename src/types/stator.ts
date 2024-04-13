@@ -10,6 +10,8 @@ export type Stator<T extends Record<any, any> = Record<any, any>> = State & {
     <K extends keyof T>(input: K): T[K];
 
     get<K extends keyof T>(input: K): T[K];
+    /** @inert */
+    get(): {};
     /** @reactive */
     use<K extends keyof T>(input: K): T[K];
     /** Precompute from a set of known parameters */

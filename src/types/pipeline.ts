@@ -9,6 +9,8 @@ export interface Pipeline<T extends Record<any, any> = Record<any, any>> extends
     emit<K extends keyof T>(input: K, value: T[K]): void;
     /** @reactive */
     use<K extends keyof T>(input: K): T[K];
+    /** @inert */
+    get(): T;
 
     observe<K extends keyof T>(input: K, reaction: (value: T[K]) => void): void;
 

@@ -8,6 +8,7 @@ export interface BoxState<T = any> extends State {
     readonly [STATE]: "box";
     [COMPARATOR]: comparators.Comparator<T>;
 
+    /** @inert */
     get(): T;
     set(value: T);
     observe(reaction: Reaction<T>): () => void;
