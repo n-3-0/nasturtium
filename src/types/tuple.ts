@@ -5,6 +5,9 @@ import { processDependents, trigger, type Reaction, Cleanup, addReaction } from 
 import { forbiddenProps, listenableProps, mutativeProps } from "./array";
 import { createComputed, type ComputedState } from "./computed";
 import * as comparators from "../comparator";
+import * as addons from "../addons";
+
+import type { $Tuple } from "./tuple.extensions";
 
 type TupleExtensions<T extends any[] = any[]> = {
     readonly [STATE]: "tuple";
@@ -50,7 +53,7 @@ type TupleExtensions<T extends any[] = any[]> = {
     makeAllComputed<U = any>(func: (value: TupleState<T>) => U, eager?: boolean, awaitPromise?: boolean): ComputedState<U>;
 };
 
-export type TupleState<T extends any[] = any[]> = State & [...T] & TupleExtensions<T>;
+export type TupleState<T extends any[] = any[]> = State & [...T] & TupleExtensions<T> & $Tuple<T>;
 
 export function isTupleState<T extends any[] = any[]>(src: any): src is TupleState<T> {
     return src?.[STATE] === "tuple";
@@ -336,6 +339,8 @@ export function createTuple<T extends any[] = any[]>(initialValue: T = [] as any
             return Object.hasOwn(values, prop);
         }
     }) as TupleState<T>;
+
+    addons.use("tuple", tuple, fakePrototype);
 
     return tuple;
 }

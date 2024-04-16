@@ -2,8 +2,11 @@ import { addReaction, processDependents, trigger } from "../manifold";
 import { COMPARATOR, IDENT, STATE, State, getNextId } from "../constants";
 import * as comparators from "../comparator";
 import { createComputed, type ComputedState } from "./computed";
+import * as addons from "../addons";
 
-export interface Semaphore<T = void> extends State {
+import type { $Semaphore } from "./semaphore.extensions";
+
+export type Semaphore<T = void> = State & {
     readonly [STATE]: "semaphore";
     [COMPARATOR]: comparators.Comparator<T>;
 
@@ -18,7 +21,7 @@ export interface Semaphore<T = void> extends State {
     readonly lastValue: T | undefined;
     /** @inert */
     readonly context: any;
-}
+} & $Semaphore<T>;
 
 export function isSemaphore(obj: any): obj is Semaphore {
     return obj?.[STATE] === "semaphore";
@@ -46,7 +49,7 @@ export function createSemaphore<T = void>(caller: (signal: (value?: any) => void
     }, context);
 
     const semaphore: Semaphore<T> = {
-        [STATE]: "semaphore",
+        [STATE]: "semaphore" as const,
         [IDENT]: id,
         [COMPARATOR]: null as any,
         get: () => currentValue,
@@ -70,6 +73,8 @@ export function createSemaphore<T = void>(caller: (signal: (value?: any) => void
         get: () => comparator,
         set: (newComparator) => comparator = newComparator,
     });
+
+    addons.use("semaphore", semaphore, { caller });
 
     return semaphore;
 }

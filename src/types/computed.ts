@@ -2,10 +2,13 @@ import { makeAgent } from "../agent";
 import { IDENT, STATE, INTERNALS, COMPARATOR, State, getNextId } from "../constants";
 import { Reaction, addReaction, processDependents, useAgent, trigger } from "../manifold";
 import * as comparators from "../comparator";
-import { PriorityLane } from "../queue";
 import { isPromise } from "../utilities";
+import { PriorityLane } from "../queue";
+import * as addons from "../addons";
 
-export interface ComputedState<T = any> extends State {
+import type { $Computed } from "./computed.extensions";
+
+export type ComputedState<T = any> = State & {
     readonly [STATE]: "computed";
     [COMPARATOR]: comparators.Comparator<T>;
 
@@ -24,7 +27,7 @@ export interface ComputedState<T = any> extends State {
     refresh(): T;
 
     makeComputed<U = any>(func: (value: T) => U, eager?: boolean, awaitPromise?: boolean): ComputedState<U>;
-}
+} & $Computed<T>;
 
 export function isComputedState(obj: any): obj is ComputedState {
     return obj?.[STATE] === "computed";
@@ -112,7 +115,7 @@ export function createComputed<T = any>(
         first = false;
     }
 
-    const computed: any = Object.freeze({
+    const computed: any = {
         [STATE]: "computed",
         [IDENT]: id,
         [INTERNALS]: { id, agent, callMemoizer: memoized },
@@ -167,7 +170,9 @@ export function createComputed<T = any>(
         },
 
         makeComputed: (func, eager, awaitPromise) => createComputed(() => func(computed.value), eager, awaitPromise)
-    });
+    };
+
+    addons.use("computed", computed, { agent, memoizer });
 
     return computed;
 }

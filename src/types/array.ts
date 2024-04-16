@@ -3,6 +3,8 @@ import { COMPARATOR, IDENT, STATE, State, getNextId } from "../constants";
 import * as comparators from "../comparator";
 import { createComputed, type ComputedState } from "./computed";
 
+import type { $Array } from "./array.extensions";
+
 // TODO: concat is special and needs special treatment
 // TODO: Is there a way to derive these efficiently?
 export const listenableProps: (keyof Array<any>)[] = [
@@ -34,7 +36,7 @@ export type ArrayState<T = any> = State & T[] & {
     observe(reaction: Reaction<T>): () => void;
 
     makeComputed<U = any>(func: (value: ArrayState<T>) => U, eager?: boolean, awaitPromise?: boolean): ComputedState<U>;
-};
+} & $Array<T>;
 
 export function isArrayState(src: any): src is ArrayState {
     return src?.[STATE] === "array";

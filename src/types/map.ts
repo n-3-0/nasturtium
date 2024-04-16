@@ -1,7 +1,10 @@
 import { Reaction, addReaction, trigger, processDependents } from "../manifold";
 import { IDENT, STATE, COMPARATOR, State, getNextId } from "../constants";
-import * as comparators from "../comparator";
 import { createComputed, type ComputedState } from "./computed";
+import * as comparators from "../comparator";
+import * as addons from "../addons";
+
+import type { $Map } from "./map.extensions";
 
 export type ObjectKeyMap<
   K extends readonly any[],
@@ -12,7 +15,7 @@ export type ObjectKeyMap<
   ? [O[H], ...ObjectKeyMap<T, O>]
   : never;
 
-export interface MapState<T extends object = {}> extends State {
+export type MapState<T extends object = {}> = State & {
     readonly [STATE]: "map";
     [COMPARATOR]: comparators.Comparator<T>;
 
@@ -39,7 +42,7 @@ export interface MapState<T extends object = {}> extends State {
     use(reaction?: Reaction<T> | undefined): void;
 
     makeComputed<U = any>(func: (state: MapState<T>) => U, eager?: boolean, awaitPromise?: boolean): ComputedState<U>;
-}
+} & $Map<T>;
 
 export function isMapState(src: any): src is MapState {
     return src?.[STATE] === "map";
@@ -60,7 +63,7 @@ export function createMap<T extends object = {}>(
     const id = getNextId();
     let comparator = comparators.eqeqeq<T>;
 
-    const map = Object.freeze({
+    const map = {
         [STATE]: "map",
         [IDENT]: id,
 
@@ -124,7 +127,9 @@ export function createMap<T extends object = {}>(
         },
 
         makeComputed: (func, eager, awaitPromise) => createComputed(() => func(map), eager, awaitPromise)
-    }) as MapState<T>;
+    } as MapState<T>;
+
+    addons.use("map", map, {});
 
     return map;
 }

@@ -1,10 +1,12 @@
 import { Reaction, addReaction, trigger, processDependents } from "../manifold";
 import { IDENT, STATE, COMPARATOR, getNextId } from "../constants";
 import * as comparators from "../comparator";
+import * as addons from "../addons";
 
 import { ObjectKeyMap } from "./map";
-import { type PrimitiveState, createPrimitive } from "./primitive";
 import { createComputed, type ComputedState } from "./computed";
+
+import type { $Object } from "./object.extensions";
 
 type ObjectStateMethods<T extends object = {}> = {
     readonly [STATE]: "object";
@@ -27,12 +29,6 @@ type ObjectStateMethods<T extends object = {}> = {
     getAll<K extends (keyof T)[]>(...keys: [...K]): ObjectKeyMap<K, T>;
     getAll(...keys: string[]): any[];
 
-    /**
-     * Turn a property of the state into a primitive, so it can be independently reactive in a more compact way
-     */
-    primitive<K extends keyof T>(key: K, defaultValue?: T): PrimitiveState<T[K]>;
-    primitive<T = any>(key: string, defaultValue?: T): PrimitiveState<T>;
-
     set<K extends keyof T>(key: K, value: T[K]);
     set(key: string, value: any);
 
@@ -50,7 +46,7 @@ type ObjectStateMethods<T extends object = {}> = {
     makeComputed<U = any>(func: (value: T) => U, eager?: boolean, awaitPromise?: boolean): ComputedState<U>;
 }
 
-export type ObjectState<T extends object = {}> = T & ObjectStateMethods<T>;
+export type ObjectState<T extends object = {}> = T & ObjectStateMethods<T> & $Object<T>;
 
 export function isObjectState(src: any): src is ObjectState {
     return src?.[STATE] === "object";
@@ -107,30 +103,6 @@ export function createObject<T extends object = {}>(
             trigger(observeAllChannel, values);
             trigger(id, { key, value });
             trigger(keyId, value);
-        },
-
-        primitive: (key, defaultValue) => {
-            if(!ids.has(key)) {
-                ids.set(key, getNextId());
-            }
-
-            const keyId = ids.get(key);
-
-            if(!Object.hasOwn(values, key)) {
-                values[key] = defaultValue;
-                keys.push(key);
-            }
-
-            const primitive = (createPrimitive as any)(values[key] , keyId, {
-                get value() {
-                    return values[key];
-                },
-                set value(newValue) {
-                    values[key] = newValue;
-                }
-            });
-
-            return primitive;
         },
 
         observe: (key, reaction) => {
@@ -261,6 +233,8 @@ export function createObject<T extends object = {}>(
             return keys;
         }
     }) as ObjectState<T>;
+
+    addons.use("object", proxy, object);
 
     return proxy;
 }
