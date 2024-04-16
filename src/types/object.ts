@@ -1,10 +1,11 @@
 import { Reaction, addReaction, trigger, processDependents } from "../manifold";
-import { IDENT, STATE, COMPARATOR, getNextId } from "../constants";
+import { IDENT, STATE, COMPARATOR, getNextId, INTERNALS } from "../constants";
 import * as comparators from "../comparator";
+import { box, Boxed } from "../utilities";
 import * as addons from "../addons";
 
-import { ObjectKeyMap } from "./map";
 import { createComputed, type ComputedState } from "./computed";
+import type { ObjectKeyMap } from "./map";
 
 import type { $Object } from "./object.extensions";
 
@@ -16,14 +17,13 @@ type ObjectStateMethods<T extends object = {}> = {
     readonly _type: T;
 
     /**
-     * NOTE: get() methods are non-reactive
-     * NOTE: This will return a copy of the original, to avoid external mutation
+     * @inert This will return a copy of the original, to avoid external mutation
      */
     get(): T;
 
-    /** NOTE: get() methods are non-reactive */
+    /** @inert */
     get<K extends keyof T>(key: K): T[K];
-    /** NOTE: get() methods are non-reactive */
+    /** @inert */
     get(key: string): any;
 
     getAll<K extends (keyof T)[]>(...keys: [...K]): ObjectKeyMap<K, T>;
@@ -31,6 +31,11 @@ type ObjectStateMethods<T extends object = {}> = {
 
     set<K extends keyof T>(key: K, value: T[K]);
     set(key: string, value: any);
+
+    subset<K extends keyof T>(key: K): Boxed<T[K], { get(): T[K] }>;
+    subset(key: string): Boxed<any, { get(): any }>;
+    subset<K extends keyof T>(...keys: K[]): { [X in K]: T[X] };
+    subset<K extends string>(...keys: K[]): { [X in K]: X extends keyof T ? T[X] : any };
 
     observe<K extends keyof T>(key: K, reaction: Reaction<T[K]>): () => void;
     observe(key: string, reaction: Reaction): () => void;
@@ -62,55 +67,65 @@ export function createObject<T extends object = {}>(
 ): ObjectState<T> {
     if(isObjectState(initialValue)) return initialValue as any;
 
-    const values = Object.fromEntries(Object.entries({ ...(initialValue as any) })) as Record<string, any>;
-    const ids = new Map();
+    const internals = {
+        values: {} as Record<string, any>,
+        ids: new Map<string, number>(),
+        keys: [] as string[],
+        comparator: comparators.eqeqeq
+    };
+
     const id = getNextId();
     const observeAllChannel = getNextId();
 
-    const keys: any[] = Object.keys(values);
-    let comparator = comparators.eqeqeq<T>;
+    Object.entries(initialValue ?? {}).forEach(([ key, value ]) => {
+        const id = getNextId();
+        internals.keys.push(key);
+        internals.ids.set(key, id);
+        internals.values[key] = value;
+    });
 
     const object = {
         [STATE]: "object",
         [IDENT]: id,
+        [INTERNALS]: internals,
 
-        get [COMPARATOR]() { return comparator },
+        get [COMPARATOR]() { return internals.comparator },
 
         get: (key) => {
             if(key === undefined) {
                 //! TODO: Use deepClone() here - check for performance first, maybe a flag on initialize?
-                return values;
+                return internals.values;
             }
 
-            return values[key];
+            return internals.values[key];
         },
 
         getAll: (...keys) => {
-            return keys.map(key => values[key]) as any;
+            return keys.map(key => internals.values[key]) as any;
         },
 
         set: (key, value) => {
-            if(!ids.has(key)) {
-                ids.set(key, getNextId());
+            if(!internals.ids.has(key)) {
+                internals.ids.set(key, getNextId());
             }
 
-            const keyId = ids.get(key);
+            const keyId = internals.ids.get(key)!;
 
-            if(values[key] === value) return;
+            if(internals.values[key] === value) return;
 
-            values[key] = value;
+            internals.values[key] = value;
 
-            trigger(observeAllChannel, values);
+            trigger(observeAllChannel, internals.values);
             trigger(id, { key, value });
             trigger(keyId, value);
         },
 
         observe: (key, reaction) => {
-            if(!ids.has(key)) {
-                ids.set(key, getNextId());
+            if(!internals.ids.has(key)) {
+                internals.ids.set(key, getNextId());
             }
 
-            return addReaction(ids.get(key), reaction);
+            return addReaction(internals.ids.get(key)!, reaction);
         },
 
         observeAny: (reaction) => {
@@ -121,55 +136,82 @@ export function createObject<T extends object = {}>(
             return addReaction(observeAllChannel, reaction);
         },
 
+        subset: (...keys) => {
+            if(keys.length === 1) {
+                const [ key ] = keys;
+
+                if(!internals.ids.has(key)) {
+                    internals.ids.set(key, getNextId());
+                }
+
+                const id = internals.ids.get(key)!;
+                return box(
+                    () => (processDependents(id), internals.values[key]),
+                    value => (internals.values[key], trigger(id, value)),
+                    { get: () => internals.values[key] }
+                );
+            }
+
+            const subset = createObject();
+            const other = subset[INTERNALS];
+
+            // Let's just clone the whole thing and not tell anyone
+            other.values = internals.values;
+            other.ids = internals.ids;
+            other.keys = internals.keys;
+
+            return subset;
+        },
+
         use: (reaction, ...keys) => {
             if(typeof reaction === "function" || arguments.length === 0) {
                 processDependents(id);
-                return values;
+                return internals.values;
             }
 
             keys = [reaction, ...keys];
 
             return keys.map(key => {
-                if(!ids.has(key)) return null;
+                if(!internals.ids.has(key)) return null;
 
-                const keyId = ids.get(key);
+                const keyId = internals.ids.get(key)!;
                 processDependents(keyId);
-                return values[key];
+                return internals.values[key];
             }) as any;
         },
 
         makeComputed: (func, eager, awaitPromise) => createComputed(() => func(proxy), eager, awaitPromise)
     } as any as ObjectState<T>;
 
-    keys.push(...Object.keys(object));
+    internals.keys.push(...Object.keys(object));
 
-    const proxy = new Proxy(values, {
+    const proxy = new Proxy(internals.values, {
         get(_, key: any) {
             if(object[key]) return object[key];
 
-            if(!ids.has(key)) ids.set(key, getNextId());
-            const keyId = ids.get(key);
+            if(!internals.ids.has(key)) internals.ids.set(key, getNextId());
+            const keyId = internals.ids.get(key)!;
 
             processDependents(keyId);
 
-            return values[key];
+            return internals.values[key];
         },
 
         set(_, key: any, value) {
             if(key === COMPARATOR) {
-                comparator = value;
+                internals.comparator = value;
                 return true;
             }
 
             if(object[key]) return true;
 
-            if(!ids.has(key)) ids.set(key, getNextId());
-            const keyId = ids.get(key);
+            if(!internals.ids.has(key)) internals.ids.set(key, getNextId());
+            const keyId = internals.ids.get(key)!;
 
-            if(comparator(values[key], value)) return true;
+            if(internals.comparator(internals.values[key], value)) return true;
 
-            (values as any)[key] = value;
-            trigger(observeAllChannel, values);
+            (internals.values as any)[key] = value;
+            trigger(observeAllChannel, internals.values);
             trigger(id, { key, value });
             trigger(keyId, value);
 
@@ -181,17 +223,17 @@ export function createObject<T extends object = {}>(
             if(object[key]) return true;
             const value = attribute.value;
 
-            if(!ids.has(key)) ids.set(key, getNextId());
-            const keyId = ids.get(key);
+            if(!internals.ids.has(key)) internals.ids.set(key, getNextId());
+            const keyId = internals.ids.get(key)!;
 
-            if(!keys.includes(key)) {
-                keys.push(key);
+            if(!internals.keys.includes(key)) {
+                internals.keys.push(key);
             }
 
-            if(comparator(values[key], value)) return true;
+            if(internals.comparator(internals.values[key], value)) return true;
 
-            (values as any)[key] = value;
-            trigger(observeAllChannel, values);
+            (internals.values as any)[key] = value;
+            trigger(observeAllChannel, internals.values);
             trigger(id, { key, value });
             trigger(keyId, value);
 
@@ -200,19 +242,19 @@ export function createObject<T extends object = {}>(
 
         deleteProperty(_, key: any) {
             if(object[key]) return false;
-            if(!Object.hasOwn(values, key)) return false;
+            if(!Object.hasOwn(internals.values, key)) return false;
 
-            const keyId = ids.get(key);
-            keys.splice(keys.indexOf(key), 1);
+            const keyId = internals.ids.get(key);
+            internals.keys.splice(internals.keys.indexOf(key), 1);
 
-            delete values[key];
+            delete internals.values[key];
 
             if(keyId) {
                 trigger(keyId, undefined);
-                ids.delete(keyId);
+                internals.ids.delete(key);
             }
 
-            trigger(observeAllChannel, values);
+            trigger(observeAllChannel, internals.values);
             trigger(id, { key, value: undefined });
             return true;
         },
@@ -226,11 +268,11 @@ export function createObject<T extends object = {}>(
         },
 
         has(_, key: any) {
-            return !!object[key] || keys.includes(key);
+            return !!object[key] || internals.keys.includes(key);
         },
 
         ownKeys() {
-            return keys;
+            return internals.keys;
         }
     }) as ObjectState<T>;
 
