@@ -3,6 +3,9 @@ import { StateBridge, SubscriptionRequest, addReaction } from "../manifold";
 
 let _target: any = null;
 
+// TODO: Is there a common instance where this would lead to memory leaks in a Node.js setting?
+const allAgents = new Set<Agent>();
+
 // By default, if there is no agent, this will be called, so just return nothing
 function resolveTarget() {
     return _target;
@@ -19,6 +22,7 @@ function handleSubscription({
     if(override) {
         if(_target === override) return null;
 
+        allAgents.add(override);
         override.addCleanup(id, addReaction(id, override.refresh, override.priority));
 
         _target = override;
@@ -27,6 +31,8 @@ function handleSubscription({
 
     const target = resolveTarget() as Agent;
     const shouldUpdate = shouldRegisterReaction(target);
+
+    target && allAgents.add(target);
 
     if(!shouldUpdate) {
         target?.addCleanup(id, addReaction(id, target.refresh, target.priority));
@@ -41,6 +47,8 @@ function handleSubscription({
 export const implementation: StateBridge<Agent> = {
     cleanup() {
         _target = null;
+        allAgents.forEach(agent => agent.cleanup());
+        allAgents.clear();
     },
     handleSubscription,
 };
