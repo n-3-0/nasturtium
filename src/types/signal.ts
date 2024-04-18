@@ -1,8 +1,11 @@
 import { addReaction, processDependents, trigger } from "../manifold";
 import { COMPARATOR, IDENT, STATE, State, getNextId } from "../constants";
 import { createComputed, type ComputedState } from "./computed";
+import * as addons from "../addons";
 
-export interface Signal<T = void> extends State {
+import type { $Signal } from "./signal.extensions";
+
+export type Signal<T = void> = State & {
     readonly [STATE]: "signal";
     readonly [COMPARATOR]: null;
 
@@ -17,7 +20,7 @@ export interface Signal<T = void> extends State {
 
     /** Note: Even if the signal may not always have a value, this can be useful for normally-unreactive data */
     makeComputed<U = any>(func: (value: T) => U, eager?: boolean, awaitPromise?: boolean): ComputedState<U>;
-}
+} & $Signal<T>;
 
 export function isSignal(obj: any): obj is Signal {
     return obj?.[STATE] === "signal";
@@ -49,6 +52,8 @@ export function createSignal<T = void>(initialValue?: T): Signal<T> {
 
     Object.defineProperty(signal, "lastValue", { get: () => lastValue });
     Object.defineProperty(signal, COMPARATOR, { set: () => {} });
+
+    addons.use("signal", signal, {});
 
     return signal;
 }

@@ -1,10 +1,13 @@
 import { Reaction, addReaction, trigger, processDependents } from "../manifold";
 import { COMPARATOR, IDENT, STATE, State, getNextId } from "../constants";
+import { createComputed, type ComputedState } from "./computed";
 import { PrimitiveState } from "./primitive";
 import * as comparators from "../comparator";
-import { createComputed, type ComputedState } from "./computed";
+import * as addons from "../addons";
 
-export interface BoxState<T = any> extends State {
+import type { $Box } from "./box.extensions";
+
+export type BoxState<T = any> = State & {
     readonly [STATE]: "box";
     [COMPARATOR]: comparators.Comparator<T>;
 
@@ -17,7 +20,7 @@ export interface BoxState<T = any> extends State {
     change(func: (previous: T) => T): void;
 
     makeComputed<U = any>(func: (value: T) => U, eager?: boolean, awaitPromise?: boolean): ComputedState<U>;
-}
+} & $Box<T>;
 
 export function isBoxState(src: any): src is BoxState {
     return src?.[STATE] === "box";
@@ -33,7 +36,7 @@ export function createBox<T = any>(initialValue?: T) {
     let value = initialValue as T;
     let comparator = comparators.eqeqeq<T>;
 
-    const box: BoxState<T> = Object.freeze({
+    const box: BoxState<T> = {
         [STATE]: "box" as const,
         [IDENT]: id,
 
@@ -62,13 +65,15 @@ export function createBox<T = any>(initialValue?: T) {
 
         change: func => box.set(func(value)),
         makeComputed: (func, eager, awaitPromise) => createComputed(() => func(box.use()), eager, awaitPromise)
-    });
+    };
+
+    addons.use("box", box, {});
 
     return box;
 }
 
 export function boxPrimitive<T = any>(state: PrimitiveState<T>) {
-    const box: BoxState<T> = Object.freeze({
+    const box: BoxState<T> = {
         [STATE]: "box" as const,
         [IDENT]: state[IDENT],
 
@@ -99,7 +104,9 @@ export function boxPrimitive<T = any>(state: PrimitiveState<T>) {
         change: func => state.value = func(state.get()),
 
         makeComputed: (func, eager, awaitPromise) => createComputed(() => func(state.use()), eager, awaitPromise)
-    });
+    };
+
+    addons.use("box", box, { primitive: state });
 
     return box;
 }

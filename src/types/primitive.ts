@@ -1,10 +1,12 @@
 import { Reaction, addReaction, trigger, processDependents } from "../manifold";
-import { IDENT, STATE, INTERNALS, COMPARATOR, State, getNextId } from "../constants";
-import { Box, makeBox } from "../box";
-import * as comparators from "../comparator";
+import { IDENT, STATE, COMPARATOR, State, getNextId } from "../constants";
 import { createComputed, type ComputedState } from "./computed";
+import * as comparators from "../comparator";
+import * as addons from "../addons";
 
-export interface PrimitiveState<T = any> extends State {
+import type { $Primitive } from "./primitive.extensions";
+
+export type PrimitiveState<T = any> = State & {
     readonly [STATE]: "primitive";
     [COMPARATOR]: comparators.Comparator<T>;
 
@@ -12,17 +14,17 @@ export interface PrimitiveState<T = any> extends State {
     get value(): T;
     set value(value: T);
 
+    /** @inert */
     get(): T;
-    set(updater: (value: T) => T);
 
+    set(updater: (value: T) => T);
     observe(reaction: Reaction<T>): () => void;
 
-    /** @reactive Will react to changes if no reaction func is provided */
+    /** @reactive */
     use(): T;
-    use(reaction?: Reaction<T>): void;
 
     makeComputed<U = any>(func: (value: T) => U, eager?: boolean, awaitPromise?: boolean): ComputedState<U>;
-}
+} & $Primitive<T>;
 
 // TODO: Non-primitive
 export type InferPrimitive<T = any> = T extends PrimitiveState<infer U> ? U : T;
@@ -31,56 +33,48 @@ export function isPrimitiveState(src: any): src is PrimitiveState {
     return src?.[STATE] === "primitive";
 }
 
-export function getPrimitiveInternal<T>(state: PrimitiveState<T>): Box<T> {
-    return state[INTERNALS];
-}
-
 export const PrimitiveAccessor = {
     inert: <T = any>(state: PrimitiveState<T>) => state.get(),
     reactive: <T = any>(state: PrimitiveState<T>) => state.value
 };
 
-export function createPrimitive<T = any>(
-    initialValue?: T,
-    id = getNextId(),
-    box: Box<T> = null!
-) {
-    if(isPrimitiveState(initialValue)) return initialValue as PrimitiveState<T>;
-
-    if(!box) {
-        box = makeBox(initialValue);
+export function createPrimitive<T = any>(initialValue?: T) {
+    if(isPrimitiveState(initialValue)) {
+        return initialValue as PrimitiveState<T>;
     }
 
+    const id = getNextId();
+    let value = initialValue as T;
     let comparator = comparators.eqeqeq<T>;
+
     const primitive = {
         [STATE]: "primitive",
         [IDENT]: id,
-        [INTERNALS]: box,
 
         get [COMPARATOR]() { return comparator },
         set [COMPARATOR](func) { comparator = func; },
 
         get() {
-            return box.value;
+            return value;
         },
 
         get value() {
             processDependents(id);
-            return box.value;
+            return value;
         },
 
         set value(newValue: T) {
-            if(comparator(box.value, newValue)) return;
+            if(comparator(value, newValue)) return;
 
-            box.value = newValue;
+            value = newValue;
             trigger(id, newValue);
         },
 
         set(modifier) {
-            const newValue = modifier(box.value);
-            if(comparator(box.value, newValue)) return;
+            const newValue = modifier(value);
+            if(comparator(value, newValue)) return;
 
-            box.value = newValue;
+            value = newValue;
             trigger(id, newValue);
         },
 
@@ -88,19 +82,14 @@ export function createPrimitive<T = any>(
             return addReaction(id, reaction);
         },
 
-        // TODO: Is this good enough?
-        use(reaction?: Reaction<T>) {
-            if(!reaction) {
-                processDependents(id);
-                return box.value;
-            }
-
-            reaction(box.value, id);
+        use() {
             processDependents(id);
+            return value;
         },
 
         makeComputed: (func, eager, awaitPromise) => createComputed(() => func(primitive.value), eager, awaitPromise)
     };
 
+    addons.use("primitive", primitive, {});
     return primitive as PrimitiveState<T>;
 }

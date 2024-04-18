@@ -1,8 +1,17 @@
 import { createPrimitive } from "nasturtium/types/primitive";
 import { createComputed } from "nasturtium/types/computed";
 import { wait } from "nasturtium/utilities";
+import { isStateful, getStateType, getStateId, setComparator } from "nasturtium/constants";
 
-describe("ComputedState", () => {
+describe("types: computed", () => {
+    it("creates a valid state object", () => {
+        const computed = createComputed(() => null);
+
+        expect(isStateful(computed)).toBe(true);
+        expect(getStateType(computed)).toEqual("computed");
+        expect(typeof getStateId(computed)).toEqual("number");
+    });
+
     it("lazy eval", () => {
         const mock = jest.fn().mockReturnValue("Hello world!");
 
@@ -50,6 +59,23 @@ describe("ComputedState", () => {
         expect(mock).toHaveBeenCalledTimes(2);
         expect(mockObserve).toHaveBeenCalledTimes(1);
         expect(mockObserve.mock.lastCall[0]).toBe(8); // 4 * 2
+    });
+
+    it("supports different comparators", () => {
+        const mockObserve = jest.fn();
+
+        const parent = createPrimitive<2 | "2">(2);
+        const computed = createComputed(() => parent.value);
+        computed.observe(mockObserve);
+
+        setComparator(computed, (a,b) => a == b);
+
+        // Because it's a soft equals comparison, it should never really trigger a change
+        expect(mockObserve).toHaveBeenCalledTimes(0);
+        parent.value = "2";
+        expect(mockObserve).toHaveBeenCalledTimes(0);
+        parent.value = 2;
+        expect(mockObserve).toHaveBeenCalledTimes(0);
     });
 
     describe("makeComputed()", () => {

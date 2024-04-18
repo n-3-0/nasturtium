@@ -1,6 +1,6 @@
 import { createPrimitive } from "nasturtium/types/primitive";
 import { isAgent, makeAgent, makeInertAgent } from "nasturtium/agent";
-import { resolveAgent, useAgent } from "nasturtium/manifold";
+import { resolveAgent, useAgent, cleanup as resetManifold } from "nasturtium/manifold";
 import { PriorityLane } from "nasturtium/queue";
 
 describe("Agents", () => {
@@ -101,6 +101,12 @@ describe("Agents", () => {
             expect(before).toHaveBeenCalledTimes(1);
             expect(after).toHaveBeenCalledTimes(1);
             expect(cleanup).toHaveBeenCalledTimes(0);
+
+            resetManifold();
+
+            setTimeout(() => {
+                expect(cleanup).toHaveBeenCalledTimes(1);
+            }, 1000);
         });
     });
 });

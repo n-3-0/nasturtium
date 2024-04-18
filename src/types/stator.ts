@@ -1,6 +1,9 @@
 import { Cleanup } from "manifold";
 import { COMPARATOR, IDENT, STATE, getNextId, type State } from "../constants";
 import { ComputedState, createComputed } from "./computed";
+import * as addons from "../addons";
+
+import type { $Stator } from "./stator.extensions";
 
 export type Stator<T extends Record<any, any> = Record<any, any>> = State & {
     readonly [STATE]: "stator";
@@ -18,7 +21,7 @@ export type Stator<T extends Record<any, any> = Record<any, any>> = State & {
     seed<K extends (keyof T)[]>(...inputs: [...K]): void;
 
     observe<K extends keyof T>(input: K, reaction: (value: T[K]) => void): Cleanup;
-}
+} & $Stator<T>;
 
 export function createStator<T extends Record<any, any> = Record<any, any>>(memoizer: <K extends keyof T>(input: K) => T[K]) {
     const id = getNextId(); // Technically not necessary, but who knows what the future demands
@@ -56,6 +59,8 @@ export function createStator<T extends Record<any, any> = Record<any, any>>(memo
         cache[key] ??= createComputed(() => memoizer(key));
         return cache[key].observe(reaction);
     }
+
+    addons.use("stator", stator, { memoizer, cache });
 
     return stator;
 }

@@ -10,14 +10,6 @@ export type Cleanup = () => void;
 export type Refresher = () => void;
 export type Reaction<T = any> = (value: T, stateId: number) => void;
 
-// TODO: Should we use an update queue? Looks like the fiber queue does already?
-// Only rerender components when all state updates are finished. This is important for instances where a component
-// modifies multiple pieces of state, it would be ideal to only call for an update once all those changes have occurred.
-// This is one thing that would set this apart from a few other state libraries, both in terms of performance of change
-// and performance of reaction. The main thing to look into is whether or not iterating through reactions every time is
-// more computationally expensive than cycling through an update queue in a way that'll affect app performance long-term
-// const queue: any[] = [];
-
 const reactions = new Map<number, Set<Reaction>>();
 let priorities = new WeakMap<any, PriorityLane>();
 
@@ -81,6 +73,10 @@ export function rejectBatch() {
     _triggerCapture = null;
 }
 
+export function isBatching() {
+    return !!_triggerCapture;
+}
+
 export interface SubscriptionRequest {
     id: number;
     context?: any;
@@ -119,7 +115,8 @@ export function useAgent(agent = makeInertAgent()) {
 
     return () => {
         agent.after();
-        activeAgentStack.splice(activeAgentStack.indexOf(agent), 1)
+        // An agent can be pushed multiple times, so we only want to strip the most recent invocation, hence lastIndexOf
+        activeAgentStack.splice(activeAgentStack.lastIndexOf(agent), 1);
     };
 }
 
@@ -127,7 +124,6 @@ export function resolveAgent() {
     return activeAgentStack.at(-1) || null;
 }
 
-// context is used for the DOM implementation
 export function processDependents(id: number, context?: any) {
     if('handleSubscription' in bridge) { // Type guard
         return bridge.handleSubscription({ id, context, override: resolveAgent() });

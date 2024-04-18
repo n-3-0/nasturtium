@@ -1,11 +1,15 @@
+// TODO: Do not use primitive for this
 import { processDependents, trigger } from "../manifold";
-import { STATE, COMPARATOR, getNextId, IDENT } from "../constants";
+import { STATE, COMPARATOR, getNextId, IDENT, State } from "../constants";
 import { createPrimitive } from "./primitive";
 import { createComputed, type ComputedState } from "./computed";
+import * as addons from "../addons";
+
+import type { $Resource } from "./resource.extensions";
 
 export type AwaitedResource<T> = { waiting: boolean, error: any, result: T };
 
-export type Resource<T> = {
+export type Resource<T> = State & {
     readonly [STATE]: "resource";
     readonly [COMPARATOR]: null;
 
@@ -34,7 +38,7 @@ export type Resource<T> = {
     use(): AwaitedResource<T>;
 
     makeComputed<U = any>(func: (value: AwaitedResource<T>) => U, eager?: boolean, awaitPromise?: boolean): ComputedState<U>;
-};
+} & $Resource<T>;
 
 export function createResource<T = any>(
     provider: (signal: AbortSignal) => Promise<T> | T,
@@ -47,8 +51,8 @@ export function createResource<T = any>(
     const error = createPrimitive<any>(null);
     const result = createPrimitive<T>();
 
-    const state: Resource<T> = Object.freeze({
-        [STATE]: "resource",
+    const state: Resource<T> = {
+        [STATE]: "resource" as const,
         [IDENT]: id,
         [COMPARATOR]: null,
 
@@ -110,7 +114,9 @@ export function createResource<T = any>(
         },
 
         makeComputed: (func, eager, awaitPromise) => createComputed(() => func(state.use()), eager, awaitPromise)
-    });
+    };
+
+    addons.use("resource", state, { waiting, error, result });
 
     return state;
 }

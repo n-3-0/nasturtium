@@ -1,8 +1,11 @@
 import { addReaction, processDependents, trigger } from "../manifold";
 import { COMPARATOR, IDENT, STATE, getNextId, type State } from "../constants";
 import { ComputedState, createComputed } from "./computed";
+import * as addons from "../addons";
 
-export interface Pipeline<T extends Record<any, any> = Record<any, any>> extends State {
+import type { $Pipeline } from "./pipeline.extensions";
+
+export type Pipeline<T extends Record<any, any> = Record<any, any>> = State & {
     readonly [STATE]: "pipeline";
     readonly [COMPARATOR]: null;
 
@@ -23,7 +26,7 @@ export interface Pipeline<T extends Record<any, any> = Record<any, any>> extends
 
     readonly lastValues: { [K in keyof T]?: T[K] | undefined; };
     readonly context: any;
-}
+} & $Pipeline<T>;
 
 export function isPipeline(obj: any): obj is Pipeline {
     return obj?.[STATE] === "pipeline";
@@ -51,7 +54,7 @@ export function createPipeline<T extends Record<any, any> = Record<any, any>>(
     caller?.(emit, context);
 
     const pipeline: Pipeline<T> = {
-        [STATE]: "pipeline",
+        [STATE]: "pipeline" as const,
         [COMPARATOR]: null,
         [IDENT]: -1,
 
@@ -85,6 +88,8 @@ export function createPipeline<T extends Record<any, any> = Record<any, any>>(
             return context;
         }
     };
+
+    addons.use("pipeline", pipeline, { caller, context });
 
     return pipeline;
 }

@@ -1,8 +1,11 @@
 import { addReaction, processDependents, trigger } from "../manifold";
 import { IDENT, STATE, COMPARATOR, State, getNextId } from "../constants";
 import { createComputed, type ComputedState } from "./computed";
+import * as addons from "../addons";
 
-export interface Timer<T extends number> extends State {
+import type { $Timer } from "./timer.extensions";
+
+export type Timer<T extends number> = State & {
     readonly [STATE]: "timer";
     readonly [COMPARATOR]: null;
 
@@ -32,7 +35,7 @@ export interface Timer<T extends number> extends State {
     readonly running: boolean;
 
     isRunning(): boolean;
-}
+} & $Timer<T>;
 
 export function isTimer(src: any): src is Timer<number> {
     return src?.[STATE] === "timer";
@@ -57,7 +60,7 @@ export function createTimer<T extends number>(
         }
     }
 
-    const timer = Object.freeze({
+    const timer = {
         [STATE]: "timer" as const,
         [IDENT]: id,
         [COMPARATOR]: null,
@@ -97,7 +100,9 @@ export function createTimer<T extends number>(
         use: () => processDependents(id),
         makeComputed: (func, eager, awaitPromise) => createComputed(previous => (timer.use(), func(previous)), eager, awaitPromise),
         observe: reaction => addReaction(id, reaction)
-    });
+    };
+
+    addons.use("timer", timer, {});
 
     return timer;
 }

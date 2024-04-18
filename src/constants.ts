@@ -20,13 +20,13 @@ export function isStateful(src: any): src is State {
     return !!src?.[STATE];
 }
 
-export function getStateType(src: any) {
+export function getStateType(src: any): string | null {
     if(!isStateful(src)) return null;
 
     return src[STATE];
 }
 
-export function getStateId(src: any) {
+export function getStateId(src: any): number | null {
     if(!isStateful(src)) return null;
 
     return src[IDENT];
